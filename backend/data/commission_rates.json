@@ -1,0 +1,57 @@
+{
+  "trendyol": {
+    "kozmetik": 0.15,
+    "elektronik": 0.08,
+    "giyim": 0.20,
+    "gıda": 0.12,
+    "ev_yasam": 0.18,
+    "spor": 0.16,
+    "kitap": 0.05,
+    "oyuncak": 0.14,
+    "takı_aksesuar": 0.22,
+    "otomotiv": 0.10
+  },
+  "hepsiburada": {
+    "kozmetik": 0.14,
+    "elektronik": 0.07,
+    "giyim": 0.18,
+    "gıda": 0.10,
+    "ev_yasam": 0.16,
+    "spor": 0.15,
+    "kitap": 0.04,
+    "oyuncak": 0.13,
+    "takı_aksesuar": 0.20,
+    "otomotiv": 0.09
+  },
+  "amazon_tr": {
+    "kozmetik": 0.15,
+    "elektronik": 0.08,
+    "giyim": 0.17,
+    "gıda": 0.08,
+    "ev_yasam": 0.15,
+    "spor": 0.15,
+    "kitap": 0.15,
+    "oyuncak": 0.15,
+    "takı_aksesuar": 0.20,
+    "otomotiv": 0.12
+  },
+  "n11": {
+    "kozmetik": 0.13,
+    "elektronik": 0.06,
+    "giyim": 0.16,
+    "gıda": 0.10,
+    "ev_yasam": 0.14,
+    "spor": 0.13,
+    "kitap": 0.04,
+    "oyuncak": 0.12,
+    "takı_aksesuar": 0.18,
+    "otomotiv": 0.08
+  },
+  "ciceksepeti": {
+    "kozmetik": 0.18,
+    "gıda": 0.15,
+    "ev_yasam": 0.20,
+    "oyuncak": 0.16,
+    "takı_aksesuar": 0.25
+  }
+}

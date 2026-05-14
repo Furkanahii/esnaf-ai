@@ -1,0 +1,25 @@
+{
+  "basit_usul": {
+    "kdv": 0.20,
+    "gelir_vergisi_dilim1": 0.15,
+    "gelir_vergisi_dilim2": 0.20,
+    "gelir_vergisi_dilim3": 0.27,
+    "yillik_ciro_limiti": 700000,
+    "muafiyetler": ["Yıllık cirosu 700.000 TL altı esnaflar basit usulde vergilendirilir"],
+    "note": "2026 yılı basit usul gelir vergisi dilimleri uygulanmaktadır."
+  },
+  "gercek_usul": {
+    "kdv": 0.20,
+    "gelir_vergisi_dilim1": 0.15,
+    "gelir_vergisi_dilim2": 0.20,
+    "gelir_vergisi_dilim3": 0.27,
+    "gelir_vergisi_dilim4": 0.35,
+    "gelir_vergisi_dilim5": 0.40,
+    "note": "Gerçek usulde defter tutma zorunluluğu ve aylık KDV beyannamesi vardır."
+  },
+  "default": {
+    "kdv": 0.20,
+    "gelir_vergisi_dilim1": 0.15,
+    "note": "Vergi türü belirlenemedi, varsayılan oranlar uygulandı."
+  }
+}

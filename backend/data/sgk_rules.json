@@ -1,0 +1,49 @@
+{
+  "bagkur": {
+    "name": "4/b (Bağkur) — Esnaf ve Sanatkarlar",
+    "aylik_prim_2026": {
+      "alt_sinir": 3150,
+      "ust_sinir": 23625,
+      "oran_toplam": 0.345,
+      "detay": {
+        "saglik": 0.125,
+        "emeklilik": 0.20,
+        "issizlik": 0.02
+      }
+    },
+    "odeme_gun": "Takip eden ayın son günü",
+    "gecikme_faizi": "Aylık %3.5 gecikme zammı",
+    "muafiyetler": [
+      "İlk kez işyeri açan gençlere (18-29 yaş) 1 yıl prim teşviki",
+      "Kadın girişimcilere 3 yıl prim indirimi"
+    ],
+    "note": "2026 yılı güncel Bağkur prim tablosu"
+  },
+  "sgk_4a": {
+    "name": "4/a (SSK) — İşçi Çalıştıran Esnaflar",
+    "isveren_payi": 0.225,
+    "isci_payi": 0.14,
+    "detay": {
+      "isveren_sgdp": 0.11,
+      "isveren_saglik": 0.075,
+      "isveren_issizlik": 0.02,
+      "isveren_kvk": 0.02,
+      "isci_sgdp": 0.09,
+      "isci_saglik": 0.05
+    },
+    "muhtasar_beyanname": "Her ayın 26'sı",
+    "note": "Asgari ücret üzerinden hesaplanan işveren maliyeti"
+  },
+  "asgari_ucret_2026": {
+    "brut": 26000,
+    "net": 22104,
+    "isveren_maliyeti": 30550
+  },
+  "onemli_tarihler": [
+    {"tarih": "Her ayın 26'sı", "islem": "Muhtasar Beyanname"},
+    {"tarih": "Takip eden ayın sonu", "islem": "Bağkur Prim Ödemesi"},
+    {"tarih": "Her ayın 26'sı", "islem": "KDV Beyanname (Gerçek Usul)"},
+    {"tarih": "Şubat, Mayıs, Ağustos, Kasım", "islem": "Geçici Vergi Beyannamesi"},
+    {"tarih": "Mart ayı", "islem": "Yıllık Gelir Vergisi Beyannamesi"}
+  ]
+}

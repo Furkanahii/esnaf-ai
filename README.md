@@ -1,17 +1,50 @@
 # 🏪 Esnaf.AI — Otonom Esnaf Asistanı
 
-**BTK Hackathon 2026** projesi. Türkiye'deki geleneksel esnafı dijital ekonomiye entegre eden, LangGraph tabanlı otonom yapay zeka asistanı.
+**BTK & Google Hackathon 2026** projesi. Türkiye'deki geleneksel esnafı dijital ekonomiye entegre eden, LangGraph tabanlı otonom yapay zeka asistanı.
 
 ## 🚀 Özellikler
 
-- 🧠 **LangGraph Supervisor Agent** — 3 uzman ajanı yöneten otonom orkestratör
+- 🧠 **LangGraph Supervisor Agent** — 5 uzman ajanı yöneten otonom orkestratör
 - 🔍 **Vision Agent** — Gemini Vision ile defter/fiş fotoğrafından veri çıkarma
 - 📊 **Financial Analyst** — Nakit akışı analizi ve kritik uyarılar
 - 🛒 **E-Commerce Agent** — 5 platform karşılaştırmalı ilan hazırlama (Hybrid RAG)
+- 📦 **Inventory Agent** — Stok takibi, düşük stok uyarıları, sipariş önerileri
 - 🎙️ **Sesli Komut** — Web Speech API ile Türkçe ses tanıma
 - 💬 **WhatsApp Clone UI** — Esnaf dostu, sıfır öğrenme eğrisi
-- 🛡️ **Hybrid RAG** — Komisyon ve vergi oranları yapılandırılmış DB'den (halüsinasyon yok)
+- 🛡️ **Hybrid RAG** — Komisyon, vergi, kargo, SGK oranları yapılandırılmış DB'den (halüsinasyon yok)
 - ✅ **Human-in-the-loop** — İlan yayınlamadan önce esnaf onayı zorunlu
+- 📊 **Dashboard** — Nakit akışı grafiği, stok durumu, platform karşılaştırması, proaktif uyarılar
+- 🔔 **Proaktif Uyarılar** — Düşük stok, vadesi yaklaşan borçlar, vergi takvimi hatırlatmaları
+
+## 🏗️ Mimari
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    KULLANICI                         │
+│     WhatsApp Clone UI + Sesli Komut + Fotoğraf       │
+└───────────────────────┬─────────────────────────────┘
+                        │ SSE Stream
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│              🧠 SUPERVISOR AGENT                     │
+│         (LangGraph Orkestratör — Akıllı Yönlendirme) │
+└──┬──────────┬──────────┬──────────┬─────────────────┘
+   │          │          │          │
+   ▼          ▼          ▼          ▼
+┌──────┐ ┌────────┐ ┌────────┐ ┌────────┐
+│📸    │ │📊      │ │🛒      │ │📦      │
+│Vision│ │Finansal│ │E-Ticaret│ │Envanter│
+│Agent │ │Analist │ │ Uzmanı │ │Takibi  │
+└──┬───┘ └────┬───┘ └────┬───┘ └────┬───┘
+   │          │          │          │
+   └──────────┴──────────┴──────────┘
+                    │
+            ┌───────▼───────┐
+            │  HYBRID RAG   │
+            │ Komisyon │ KDV │
+            │ Kargo │ SGK   │
+            └───────────────┘
+```
 
 ## 🏗️ Tech Stack
 
@@ -19,8 +52,9 @@
 |:-------|:---------|
 | Frontend | Next.js 16 + TailwindCSS 4 + TypeScript |
 | Backend | FastAPI + Uvicorn |
-| AI | Google Gemini 1.5 Flash + LangGraph + LangChain |
+| AI | Google Gemini 2.0 Flash + LangGraph + LangChain |
 | Streaming | Server-Sent Events (SSE) |
+| Design | Glassmorphism + Gradient Animations + Inter Font |
 
 ## ⚡ Kurulum
 
@@ -51,32 +85,52 @@ Tarayıcıda `http://localhost:3000` adresini aç.
 ```
 esnaf-ai/
 ├── backend/
-│   ├── agent.py              # LangGraph Supervisor + Uzman Ajanlar
-│   ├── main.py               # FastAPI + SSE Streaming
+│   ├── agent.py              # LangGraph Supervisor + 5 Uzman Agent
+│   ├── main.py               # FastAPI + SSE + Dashboard API
 │   ├── requirements.txt
 │   └── data/
-│       ├── commission_rates.json  # Hybrid RAG — komisyon oranları
-│       └── tax_rules.json         # Hybrid RAG — vergi kuralları
+│       ├── commission_rates.json  # Hybrid RAG — komisyon oranları (5 platform)
+│       ├── tax_rules.json         # Hybrid RAG — vergi kuralları
+│       ├── inventory_demo.json    # Demo envanter (20 ürün)
+│       ├── kargo_rates.json       # Kargo fiyat tablosu (5 şirket)
+│       ├── sgk_rules.json         # Bağkur/SGK prim bilgileri
+│       └── calendar.json          # Vergi takvimi hatırlatmaları
 │
 └── frontend/
     └── src/app/
-        ├── page.tsx           # WhatsApp clone Chat UI
-        ├── layout.tsx         # Next.js layout
-        └── globals.css        # Stiller
+        ├── page.tsx               # Landing Page (Hero + Features)
+        ├── chat/page.tsx          # WhatsApp Clone Chat UI
+        ├── dashboard/page.tsx     # Analytics Dashboard
+        ├── components/
+        │   ├── Navbar.tsx         # Responsive Navigation
+        │   └── MarkdownRenderer.tsx # Markdown → HTML
+        ├── layout.tsx             # SEO + Fonts
+        └── globals.css            # Glassmorphism + Animations
 ```
 
-## 🧪 API Test
+## 🧪 API Endpoints
 
 ```bash
-# Defter analizi
-curl -N "http://localhost:8000/stream?message=defterin%20fotoğrafına%20bak"
+# Chat (SSE Stream)
+curl -N "http://localhost:8000/stream?message=merhaba"
 
-# E-ticaret
-curl -N "http://localhost:8000/stream?message=kozmetik%20satmak%20istiyorum"
+# Dashboard Data
+curl http://localhost:8000/api/dashboard
 
-# Mali durum
-curl -N "http://localhost:8000/stream?message=durumum%20nedir"
+# Proactive Alerts
+curl http://localhost:8000/api/alerts
+
+# Platform Comparison
+curl http://localhost:8000/api/platforms
 ```
+
+## 📱 Sayfalar
+
+| Sayfa | URL | Açıklama |
+|:------|:----|:---------|
+| Landing | `/` | Hero, Features, Stats, Tech Stack, Architecture |
+| Chat | `/chat` | WhatsApp-style AI chat with SSE streaming |
+| Dashboard | `/dashboard` | Ring charts, bar charts, alerts, transactions |
 
 ## 👥 Takım
 

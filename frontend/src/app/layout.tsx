@@ -13,8 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Esnaf.AI | Otonom Esnaf Asistanı",
-  description: "Türkiye'nin ilk otonom yapay zeka esnaf asistanı.",
+  title: "Esnaf.AI | Türkiye'nin İlk Otonom Esnaf Asistanı",
+  description: "LangGraph + Gemini ile çalışan, defter okuyan, mali analiz yapan, e-ticaret ilan hazırlayan otonom yapay zeka asistanı. BTK Hackathon 2026.",
+  keywords: "esnaf, yapay zeka, AI, hackathon, LangGraph, Gemini, e-ticaret, mali analiz",
+  openGraph: {
+    title: "Esnaf.AI — Otonom Esnaf Asistanı",
+    description: "Geleneksel esnafı dijital ekonomiye entegre eden AI asistanı",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -25,9 +31,9 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex flex-col min-h-screen">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,27 @@
+{
+  "location": "Üsküdar",
+  "generated_at": "2026-05-17T22:20:29.036819",
+  "trends": [
+    {
+      "category": "elektronik",
+      "product_name": "Type-C Şarj Kablosu",
+      "demand_increase_percent": 41,
+      "competitor_avg_price": 137,
+      "insight": "Bölgendeki rakip esnafların çoğu 'Type-C Şarj Kablosu' fiyatını güncelledi. Yeni ortalama fiyat 137 TL seviyesinde."
+    },
+    {
+      "category": "kozmetik",
+      "product_name": "Nemlendirici Krem 50ml",
+      "demand_increase_percent": 84,
+      "competitor_avg_price": 300,
+      "insight": "Getir ve Trendyol simülasyon verilerine göre Üsküdar bölgesinde 'Nemlendirici Krem 50ml' talebi %84 patladı! Rakipler stok eritiyor."
+    },
+    {
+      "category": "gıda",
+      "product_name": "Soğuk Çay 330ml",
+      "demand_increase_percent": 21,
+      "competitor_avg_price": 41,
+      "insight": "Bölgendeki rakip esnafların çoğu 'Soğuk Çay 330ml' fiyatını güncelledi. Yeni ortalama fiyat 41 TL seviyesinde."
+    }
+  ]
+}

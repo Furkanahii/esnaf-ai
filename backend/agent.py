@@ -1,11 +1,12 @@
 """
-Esnaf.AI — LangGraph Supervisor Agent v3.0
-Hackathon-ready: Smart routing, rich mock responses, real Gemini when available.
+Esnaf.AI — LangGraph Supervisor Agent v4.0
+Hackathon-ready: 5-agent system with inventory, proactive alerts, expanded RAG.
 """
 import os
 import json
 import base64
 import re
+from datetime import datetime
 from typing import TypedDict, Annotated, Sequence, Optional
 import operator
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
@@ -39,6 +40,9 @@ class AgentState(TypedDict):
     ecommerce_draft_ready: bool
     next_agent: str
     active_agent: str
+    proactive_alerts: Optional[list]
+    financial_risk_report: Optional[dict]
+    market_insights: Optional[list]
 
 
 # --- GEMINI HELPER ---
@@ -97,22 +101,40 @@ def detect_intent(text: str, has_image: bool) -> str:
         "odeme", "tahsil", "veresiye", "bakiye", "ciro", "kazanc",
         "ne kadar", "kac lira", "kac tl", "nedir", "nasil",
         "odeyeceg", "borcum", "alacagim", "kasada", "param",
+        "sgk", "bagkur", "prim", "vergi", "kdv", "muhtasar",
     ]
     if any(w in normalized for w in finance_words):
         return "financial_analyst_agent"
     
+    # Inventory keywords
+    inventory_words = [
+        "stok", "envanter", "urun", "raf", "depo", "sayim",
+        "bitti", "kalmadi", "azaldi", "siparis", "tedarikcr",
+        "listele", "urunler", "ne var", "neler var",
+    ]
+    if any(w in normalized for w in inventory_words):
+        return "inventory_agent"
+
     # E-commerce keywords
     ecommerce_words = [
-        "sat", "satis", "ilan", "urun", "magaza", "fiyat",
+        "sat", "satis", "ilan", "magaza", "fiyat",
         "trendyol", "hepsiburada", "amazon", "n11", "ciceksepeti",
         "e-ticaret", "eticaret", "online", "internet",
         "komisyon", "kargo", "liste", "yayinla", "pazarlama",
-        "seo", "baslik", "aciklama", "stok", "envanter",
-        "kazandir", "gelir", "satabili", "satayim", "satalim",
-        "platform", "pazaryeri", "maliyet", "marj", "kar",
+        "seo", "baslik", "aciklama",
+        "kazandir", "satabili", "satayim", "satalim",
+        "platform", "pazaryeri", "marj", "gonderim",
     ]
     if any(w in normalized for w in ecommerce_words):
         return "ecommerce_agent"
+    
+    # Neighborhood / Market keywords
+    market_words = [
+        "mahalle", "piyasa", "rakip", "trend", "diger", "fiyatlar",
+        "ne satiyor", "bölge", "getir", "çevre"
+    ]
+    if any(w in normalized for w in market_words):
+        return "neighborhood_agent"
     
     # If nothing matched → general chat (supervisor handles it)
     return "general_chat"
@@ -151,11 +173,110 @@ def compare_all_platforms(category: str) -> str:
     if not comparisons:
         return ""
     comparisons.sort(key=lambda x: x[1])
-    lines = ["📊 Platform Karşılaştırması:"]
+    lines = ["📊 **Platform Karşılaştırması:**"]
     for p, r in comparisons:
         marker = " ⭐ EN UCUZ" if p == comparisons[0][0] else ""
         lines.append(f"  • {p.replace('_', ' ').title()}: %{int(r*100)} komisyon{marker}")
     return "\n".join(lines)
+
+
+def get_inventory_data() -> dict:
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "data", "inventory_demo.json"), "r") as f:
+            return json.load(f)
+    except:
+        return {"products": [], "summary": {}}
+
+
+def get_kargo_rates() -> dict:
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "data", "kargo_rates.json"), "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+
+def get_sgk_info() -> dict:
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "data", "sgk_rules.json"), "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+
+def get_upcoming_deadlines() -> list:
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "data", "calendar.json"), "r") as f:
+            cal = json.load(f)
+        now = datetime.now()
+        months_tr = {1:"ocak",2:"subat",3:"mart",4:"nisan",5:"mayis",6:"haziran",
+                     7:"temmuz",8:"agustos",9:"eylul",10:"ekim",11:"kasim",12:"aralik"}
+        month_key = months_tr.get(now.month, "")
+        events = cal.get("2026", {}).get(month_key, [])
+        upcoming = [e for e in events if e["gun"] >= now.day]
+        return upcoming[:3]
+    except:
+        return []
+
+
+def get_neighborhood_trends() -> dict:
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "data", "neighborhood_trends.json"), "r") as f:
+            return json.load(f)
+    except:
+        return {"location": "Bilinmiyor", "trends": []}
+
+# --- FINANCIAL ALGORITHMS ---
+def calculate_discount_loss(amount: float, days_to_due: int, annual_rate: float = 0.60) -> float:
+    """Senet/Çek iskonto (kırdırma) zararını hesaplar. Varsayılan yıllık faiz %60."""
+    if days_to_due <= 0:
+        return 0.0
+    daily_rate = annual_rate / 365
+    loss = amount * daily_rate * days_to_due
+    return round(loss, 2)
+
+def calculate_collection_risk(amount: float, delay_days: int) -> int:
+    """Tahsilat riski skorunu hesaplar (Risk = Gecikme * Tutar çarpanı, 0-100 arası normalize)"""
+    if delay_days <= 0:
+        return 0
+    # Basit skorlama: Gecikme günü ve tutar bazlı
+    raw_score = (delay_days * 2) + (amount / 1000)
+    return min(100, int(raw_score))
+
+def calculate_health_score(net_cash: float, risk_scores: list, depreciation: float) -> int:
+    """Esnaf Sağlamlık Skoru (0-100)"""
+    score = 80
+    if net_cash < 0:
+        score -= 20
+    else:
+        score += min(15, int(net_cash / 1000))
+    avg_risk = sum(risk_scores) / len(risk_scores) if risk_scores else 0
+    if avg_risk > 50:
+        score -= 15
+    if depreciation > 0:
+        score -= 5 # penalty for heavy depreciation burden without proper reserve
+    return max(0, min(100, int(score)))
+
+def build_proactive_alerts(financial_data: dict = None) -> list:
+    alerts = []
+    
+    if financial_data:
+        for item in financial_data.get("items", []):
+            if item.get("risk_score", 0) > 70:
+                alerts.append({"type": "critical", "msg": f"🚨 TAHSİLAT RİSKİ: {item['name']} ({item['risk_score']}/100 Risk)"})
+                
+    inv = get_inventory_data()
+    for p in inv.get("products", []):
+        if p.get("market_cost") and p.get("sell_price") and p["sell_price"] < p["market_cost"]:
+            alerts.append({"type": "critical", "msg": f"📉 ZARARINA SATIŞ: {p['name']} (Rayiç: {p['market_cost']}₺, Satış: {p['sell_price']}₺)"})
+        elif p["stock"] == 0:
+            alerts.append({"type": "critical", "msg": f"🔴 {p['name']} STOKTA YOK!"})
+        elif p["stock"] <= p["min_stock"]:
+            alerts.append({"type": "warning", "msg": f"⚠️ {p['name']} azaldı ({p['stock']} adet)"})
+    deadlines = get_upcoming_deadlines()
+    for d in deadlines:
+        alerts.append({"type": "info", "msg": f"📅 {d['gun']}. gün: {d['islem']}"})
+    return alerts
 
 
 # --- AGENT NODES ---
@@ -179,13 +300,18 @@ def supervisor_node(state: AgentState):
         "vision_agent": "📸 Fotoğrafı aldım abi, hemen analiz ediyorum...",
         "financial_analyst_agent": "📊 Hesaplara bakıyorum abi, bir saniye...",
         "ecommerce_agent": "🛒 E-ticaret detaylarını hazırlıyorum abi...",
+        "inventory_agent": "📦 Stok bilgilerini kontrol ediyorum abi...",
+        "neighborhood_agent": "📡 Mahalledeki piyasa durumuna bakıyorum abi...",
     }
+    
+    alerts = build_proactive_alerts(state.get("extracted_financial_data"))
     
     if intent in route_responses:
         return {
             "messages": [AIMessage(content=route_responses[intent])],
             "next_agent": intent,
-            "active_agent": "supervisor"
+            "active_agent": "supervisor",
+            "proactive_alerts": alerts,
         }
     
     # General chat — try Gemini first, then smart mock
@@ -248,6 +374,14 @@ SADECE JSON döndür, başka hiçbir şey yazma."""
                 if clean.startswith("```"):
                     clean = clean.split("\n", 1)[1].rsplit("```", 1)[0]
                 extracted_data = json.loads(clean)
+                
+                # Hata Toleransı: Gemini bazen field'ları unutabiliyor, array'den otomatik topla
+                if "total_debt" not in extracted_data or "total_receivable" not in extracted_data:
+                    items = extracted_data.get("items", [])
+                    extracted_data["total_debt"] = sum(i.get("amount", 0) for i in items if i.get("type") == "borc")
+                    extracted_data["total_receivable"] = sum(i.get("amount", 0) for i in items if i.get("type") == "alacak")
+                if "cash" not in extracted_data:
+                    extracted_data["cash"] = 0
             except json.JSONDecodeError:
                 pass
     
@@ -309,13 +443,76 @@ def financial_analyst_node(state: AgentState):
     is_critical = net < 0
     
     # Try Gemini
-    analysis_prompt = f"""Bir esnafın mali durumunu analiz et. Samimi esnaf ağabeyi gibi konuş.
+    sgk_info = get_sgk_info()
+    bagkur_prim = sgk_info.get("bagkur", {}).get("aylik_prim_2026", {}).get("alt_sinir", 3150)
+    
+    # Calculate risks explicitly
+    risk_report = {"high_risk_collections": [], "discount_losses": []}
+    all_risks = []
+    
+    for item in data.get("items", []):
+        if item.get("risk_score"):
+            all_risks.append(item["risk_score"])
+            
+        # Tahsilat riski
+        if item.get("type") == "alacak" and item.get("risk_score", 0) > 70:
+            risk_report["high_risk_collections"].append({
+                "name": item["name"],
+                "amount": item["amount"],
+                "risk_score": item["risk_score"]
+            })
+            
+        # İskonto hesabı (Senet/Çek)
+        if item.get("type") == "alacak" and item.get("instrument_type") in ["senet", "cek"]:
+            # Basit simülasyon: Hackathon demo için sabit 45 gün diyelim
+            loss = calculate_discount_loss(item["amount"], 45, 0.60)
+            risk_report["discount_losses"].append({
+                "name": item["name"],
+                "amount": item["amount"],
+                "instrument": item["instrument_type"].upper(),
+                "estimated_loss": loss
+            })
+            
+    assets = data.get("assets", [])
+    total_depreciation = sum(a.get("monthly_depreciation", 0) for a in assets)
+    health_score = calculate_health_score(net, all_risks, total_depreciation)
+    
+    # Context Builders
+    depreciation_context = ""
+    if total_depreciation > 0:
+        depreciation_context = f"\n⚠️ AMORTİSMAN (GİZLİ ZARAR):\nDükkandaki demirbaşların (Motor, Dolap vb.) aylık yıpranma payı toplam {total_depreciation} TL. Esnaf cebinde para var sanıyor ama aslında eşyası eskiyor, bunu uyar."
+
+    ciro_context = ""
+    if is_critical:
+        has_check = any(i.get("type") == "alacak" and i.get("instrument_type") in ["cek", "senet"] for i in data.get("items", []))
+        owes_supplier = any(i.get("type") == "borc" for i in data.get("items", []))
+        if has_check and owes_supplier:
+            ciro_context = "\n💡 AKILLI ÇÖZÜM (CİRO): Bankaya çek/senet kırdırıp komisyon ödemek (iskonto) yerine, elindeki müşteri çekini toptancıya devrederek (ciro ederek) borcunu kapatmasını önerebilirsin. Bu faiz zararını engeller."
+
+    risk_context = ""
+    if risk_report["high_risk_collections"]:
+        risk_context += f"\n🚨 YÜKSEK TAHSİLAT RİSKİ OLAN ALACAKLAR:\n"
+        for r in risk_report["high_risk_collections"]:
+            risk_context += f"- {r['name']}: {r['amount']} TL (Risk Skoru: {r['risk_score']}/100)\n"
+            
+    if risk_report["discount_losses"]:
+        risk_context += f"\n💸 İSKONTO ZARAR ANALİZİ (Erken Kırdırma Senaryosu):\n"
+        for d in risk_report["discount_losses"]:
+            risk_context += f"- {d['name']} ({d['instrument']}): {d['amount']} TL. Bugün bankada kırdırılırsa yaklaşık {d['estimated_loss']} TL zarar oluşacak!\n"
+
+    analysis_prompt = f"""Sen tecrübeli, esnaf ağzı bilen, karmaşık finansal terimleri basit örneklere indirgeyen bir danışmansın.
+Aşağıdaki mali durumu analiz et ve esnafa samimi bir dille net öneriler ver:
 
 Toplam Borç: {total_debt:,} TL | Alacak: {total_recv:,} TL | Nakit: {cash:,} TL | Net: {net:,} TL
+Esnaf Sağlamlık Skoru: {health_score}/100
 
-{"DURUM KRİTİK — açık var!" if is_critical else "Durum kontrol altında."}
+{depreciation_context}
+{ciro_context}
+{risk_context}
 
-3-4 cümle durum özeti ve 2-3 somut aksiyon önerisi ver. Samimi ol ama net konuş."""
+{"DURUM KRİTİK — nakit sıkışıklığı var! Bağkur primini bile ödemek zorlaşabilir." if is_critical else "Durum kontrol altında, kasada yeterli para var."}
+
+3-4 cümle ile proaktif bir durum özeti yap ve 2-3 somut aksiyon önerisi ver. Açıklamalarında 'cebinden yiyorsun', 'iskonto zararı', 'ciro et', 'gizli zarar' gibi terimleri kullan ve samimi ol."""
 
     gemini_result = call_gemini(analysis_prompt)
     
@@ -338,12 +535,12 @@ Toplam Borç: {total_debt:,} TL | Alacak: {total_recv:,} TL | Nakit: {cash:,} TL
             else:
                 advice_parts.append(f"  1️⃣ Alacaklarını ({total_recv:,} TL) hemen tahsil etmeye başla\n")
             
-            advice_parts.append(f"  2️⃣ Rafta yatan ürünleri e-ticarete koy — hızlı nakit girişi sağla\n")
+            advice_parts.append(f"  2️⃣ Ay sonu **{bagkur_prim:,} TL Bağkur primi** ödemen var, bunu kenara ayırmalısın!\n")
             
             if largest_debt:
                 advice_parts.append(f"  3️⃣ {largest_debt['name']}'e ({largest_debt['amount']:,} TL) vade uzatma talep et\n")
             
-            advice_parts.append(f"\n💡 \"Ürün satmak istiyorum\" de, sana en kârlı platformu bulayım!")
+            advice_parts.append(f"\n💡 \"Ürün satmak istiyorum\" de, sana e-ticaretle ek gelir bulayım!")
             msg = "".join(advice_parts)
         else:
             surplus = net
@@ -351,10 +548,10 @@ Toplam Borç: {total_debt:,} TL | Alacak: {total_recv:,} TL | Nakit: {cash:,} TL
                 f"✅ **Abi durum fena değil!** Kasada {surplus:,} TL fazlan var.\n\n"
                 f"Net durumun: {net:,} TL (Nakit {cash:,} + Alacak {total_recv:,} - Borç {total_debt:,})\n\n"
                 f"📋 **Tavsiyelerim:**\n"
-                f"  1️⃣ Borçları ({total_debt:,} TL) vadesinde öde, güven kaybetme\n"
-                f"  2️⃣ Alacakları ({total_recv:,} TL) sıkı takip et, geciktirme\n"
-                f"  3️⃣ Fazla nakiti stok yenilemesine yatır, sezon ürünü kaçırma\n\n"
-                f"💡 \"Ürün satmak istiyorum\" de, e-ticarette de kazandırayım!"
+                f"  1️⃣ Ay sonu **{bagkur_prim:,} TL Bağkur primini** zamanında öde, %5 indirimini kaybetme.\n"
+                f"  2️⃣ Kalan borçları ({total_debt:,} TL) vadesinde öde, güven kaybetme.\n"
+                f"  3️⃣ Alacakları ({total_recv:,} TL) sıkı takip et, geciktirme.\n\n"
+                f"💡 \"Ürün satmak istiyorum\" de, e-ticarette işleri büyütelim!"
             )
     
     return {
@@ -421,20 +618,31 @@ def ecommerce_agent_node(state: AgentState):
     tax_info = get_tax_info("basit_usul")
     kdv = tax_info.get("kdv", 0.20)
     
+    kargo_data = get_kargo_rates()
+    # PTT Kargo'yu baz al (genelde en uygun)
+    kargo_base = kargo_data.get("ptt_kargo", {}).get("base_price", 32.00)
+    kargo_name = kargo_data.get("ptt_kargo", {}).get("name", "PTT Kargo")
+    
     if commission == -1.0:
         commission = 0.20
     
     # Price calculation example
     sample_cost = 100  # Example cost price
     total_cut = commission + kdv
-    min_sell = int(sample_cost / (1 - total_cut)) + 1
+    # Satış Fiyatı = (Maliyet + Kargo) / (1 - Komisyon - KDV)
+    min_sell = int((sample_cost + kargo_base) / (1 - total_cut)) + 1
     
     # Try Gemini for creative SEO
     seo_prompt = f"""Türk e-ticaret sitesi için {category} kategorisinde ürün ilanı hazırla.
 Platform: {platform}. Komisyon: %{int(commission*100)}. KDV: %{int(kdv*100)}.
+Kargo Firması: {kargo_name} (Taban fiyat: {kargo_base} TL).
+
+ÖZEL GÖREV (Cross-Sell / Sepet Stratejisi):
+Tekli satışlarda kargo maliyeti kâr marjını yutuyorsa, esnafa mutlaka "Bu ürünü tek satma, kargo parasına değmez. Yanına X ve Y ürünlerini ekleyip Set/Paket olarak sat ki kargo bedavaya gelsin ve kâr et" şeklinde samimi bir 'esnaf aklı' tavsiyesi ver.
+
 1. SEO başlık (max 80 karakter, Türkçe anahtar kelimeler)
 2. Ürün açıklaması (3 cümle, müşteriyi cezbeden)
-3. 100 TL maliyetli ürün için minimum satış fiyatı önerisi
+3. 100 TL maliyetli ürün için minimum satış fiyatı önerisi ve "Sepet (Set) stratejisi" tavsiyesi.
 Samimi esnaf diliyle yaz."""
 
     gemini_result = call_gemini(seo_prompt)
@@ -476,8 +684,9 @@ Samimi esnaf diliyle yaz."""
             f"📝 **SEO Başlık:** \"{title}\"\n\n"
             f"📝 **Açıklama:** {desc}\n\n"
             f"💰 **Fiyat Hesabı (100 TL maliyetli ürün için):**\n"
-            f"  • Komisyon: %{int(commission*100)} = {int(sample_cost * commission)} TL\n"
-            f"  • KDV: %{int(kdv*100)} = {int(sample_cost * kdv)} TL\n"
+            f"  • Kargo Gideri ({kargo_name}): {kargo_base} TL\n"
+            f"  • Komisyon: %{int(commission*100)} = {int(min_sell * commission)} TL\n"
+            f"  • KDV: %{int(kdv*100)} = {int(min_sell * kdv)} TL\n"
             f"  • Minimum satış fiyatı: **{min_sell} TL**\n"
             f"  • Önerilen fiyat: **{int(min_sell * 1.15)} TL** (%15 kâr marjı)\n"
             f"━━━━━━━━━━━━━━━━━━━\n\n"
@@ -492,6 +701,115 @@ Samimi esnaf diliyle yaz."""
     }
 
 
+def inventory_agent_node(state: AgentState):
+    """Inventory Agent — Stock tracking, low stock alerts, reorder suggestions."""
+    inv = get_inventory_data()
+    products = inv.get("products", [])
+    summary = inv.get("summary", {})
+
+    messages = state.get("messages", [])
+    last_user_msg = ""
+    for m in reversed(messages):
+        if isinstance(m, HumanMessage):
+            last_user_msg = m.content
+            break
+
+    normalized = normalize_turkish(last_user_msg)
+
+    # Check for specific product query
+    matching = [p for p in products if normalize_turkish(p["name"]).find(normalized.split()[-1] if normalized.split() else "") >= 0]
+
+    out_of_stock = [p for p in products if p["stock"] == 0]
+    low_stock = [p for p in products if 0 < p["stock"] <= p["min_stock"]]
+    healthy = [p for p in products if p["stock"] > p["min_stock"]]
+
+    gemini_prompt = f"""Bir esnafın stok durumunu analiz et. Samimi esnaf ağabeyi gibi konuş.
+Toplam {len(products)} ürün. Stokta olmayan: {len(out_of_stock)}. Azalan: {len(low_stock)}. Sağlıklı: {len(healthy)}.
+Toplam stok değeri: {summary.get('total_stock_value', 0):,} TL.
+Potansiyel kâr: {summary.get('potential_profit', 0):,} TL.
+Biten ürünler: {', '.join(p['name'] for p in out_of_stock)}.
+Azalan ürünler: {', '.join(f"{p['name']} ({p['stock']} adet)" for p in low_stock)}.
+Rayiç bedel (market_cost) altında satılan, zararına satış yapılan ürünleri analiz et (varsa vurgula).
+
+3-4 cümle durum özeti ve 2-3 somut sipariş önerisi ver."""
+
+    gemini_result = call_gemini(gemini_prompt)
+
+    if gemini_result:
+        msg = gemini_result.strip()
+    else:
+        lines = [f"📦 **Stok Raporu** — {inv.get('store_name', 'Dükkan')}\n"]
+        lines.append(f"📊 **Toplam:** {len(products)} ürün | Stok Değeri: {summary.get('total_stock_value', 0):,} TL\n")
+
+        if out_of_stock:
+            lines.append("🔴 **STOKTA YOK — Acil Sipariş:**")
+            for p in out_of_stock:
+                lines.append(f"  • {p['name']} — Tedarikçi: {p['supplier']}")
+            lines.append("")
+
+        if low_stock:
+            lines.append("⚠️ **Azalan Stoklar:**")
+            for p in low_stock:
+                lines.append(f"  • {p['name']}: {p['stock']} adet kaldı (min: {p['min_stock']})")
+            lines.append("")
+
+        lines.append(f"💰 **Potansiyel Kâr:** {summary.get('potential_profit', 0):,} TL")
+        lines.append(f"\n💡 *Rafta yatan ürünleri e-ticarete koyarak hızlı nakit girişi sağlayabilirsin!*")
+        msg = "\n".join(lines)
+
+    return {
+        "messages": [AIMessage(content=msg)],
+        "next_agent": END,
+        "active_agent": "inventory_agent"
+    }
+
+
+def neighborhood_agent_node(state: AgentState):
+    """Neighborhood Agent — Market intelligence and swarm insights."""
+    trends_data = get_neighborhood_trends()
+    location = trends_data.get("location", "Bölge")
+    trends = trends_data.get("trends", [])
+    
+    # Get user inventory to cross-reference
+    inv = get_inventory_data()
+    products = inv.get("products", [])
+    
+    # Sadece 3-4 random ürünü gönderelim ki prompt limiti şişmesin
+    import random
+    sampled_products = random.sample(products, min(len(products), 5)) if products else []
+    user_inventory_context = "\n".join([f"- {p['name']}: Stok {p['stock']} adet, Satış: {p['sell_price']} TL" for p in sampled_products])
+    
+    gemini_prompt = f"""Sen Esnaf.AI 'Mahalle Radarı' ajanısın. 
+Şu anki konum: {location}.
+
+Piyasadaki Güncel Trendler:
+{json.dumps(trends, ensure_ascii=False)}
+
+Esnafın Mevcut Stoğu (Örneklem):
+{user_inventory_context}
+
+Yukarıdaki dış pazar trend verilerini ve esnafın stoklarını karşılaştırarak esnafa piyasa istihbaratı ver. 
+Örneğin, bölgede talebi artan bir ürün esnafta varsa "bunu vitrine çıkar" veya rakiplerin fiyatı yüksekse "fiyatını güncelle" önerisi yap.
+Ayrıca, Esnaf bu ürünleri Vadeli Satmayı (açık hesap) düşünüyorsa, artan talep ve enflasyonu hesaba katarak "Vadeli satacaksan fiyatına mutlaka vade farkı (enflasyon payı) koy ki yerine yenisini koyabilesin" uyarısı ekle.
+Samimi esnaf ağzıyla, 3-4 cümleyi geçmeden doğrudan (actionable) konuş.
+"""
+    gemini_result = call_gemini(gemini_prompt)
+    if gemini_result:
+        msg = gemini_result.strip()
+    else:
+        lines = [f"📡 **Mahalle Radarı** — {location} Analizi\n"]
+        for t in trends:
+            lines.append(f"  • {t['insight']}")
+        lines.append(f"\n💡 *Bu verilere göre fiyatlarını ve vitrinini güncellemek istersen bana yaz abi.*")
+        msg = "\n".join(lines)
+        
+    return {
+        "messages": [AIMessage(content=msg)],
+        "next_agent": END,
+        "active_agent": "neighborhood_agent"
+    }
+
+
 # --- GRAPH ---
 def router(state: AgentState):
     return state.get("next_agent", END)
@@ -501,12 +819,16 @@ workflow.add_node("supervisor", supervisor_node)
 workflow.add_node("vision_agent", vision_agent_node)
 workflow.add_node("financial_analyst_agent", financial_analyst_node)
 workflow.add_node("ecommerce_agent", ecommerce_agent_node)
+workflow.add_node("inventory_agent", inventory_agent_node)
+workflow.add_node("neighborhood_agent", neighborhood_agent_node)
 
 workflow.set_entry_point("supervisor")
 workflow.add_conditional_edges("supervisor", router)
 workflow.add_conditional_edges("vision_agent", router)
 workflow.add_conditional_edges("financial_analyst_agent", router)
 workflow.add_conditional_edges("ecommerce_agent", router)
+workflow.add_conditional_edges("inventory_agent", router)
+workflow.add_conditional_edges("neighborhood_agent", router)
 
 app_graph = workflow.compile()
 

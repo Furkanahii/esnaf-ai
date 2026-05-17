@@ -1,0 +1,26 @@
+{
+  "2026": {
+    "mayis": [
+      {"gun": 26, "islem": "KDV Beyannamesi Son Gün", "tip": "vergi", "onem": "kritik"},
+      {"gun": 26, "islem": "Muhtasar Beyanname Son Gün", "tip": "vergi", "onem": "kritik"},
+      {"gun": 31, "islem": "Bağkur Prim Ödemesi (Nisan)", "tip": "sgk", "onem": "kritik"},
+      {"gun": 31, "islem": "Geçici Vergi Beyannamesi (Q1)", "tip": "vergi", "onem": "yuksek"}
+    ],
+    "haziran": [
+      {"gun": 26, "islem": "KDV Beyannamesi Son Gün", "tip": "vergi", "onem": "kritik"},
+      {"gun": 26, "islem": "Muhtasar Beyanname Son Gün", "tip": "vergi", "onem": "kritik"},
+      {"gun": 30, "islem": "Bağkur Prim Ödemesi (Mayıs)", "tip": "sgk", "onem": "kritik"}
+    ],
+    "temmuz": [
+      {"gun": 26, "islem": "KDV Beyannamesi Son Gün", "tip": "vergi", "onem": "kritik"},
+      {"gun": 31, "islem": "Bağkur Prim Ödemesi (Haziran)", "tip": "sgk", "onem": "kritik"}
+    ],
+    "agustos": [
+      {"gun": 26, "islem": "KDV Beyannamesi Son Gün", "tip": "vergi", "onem": "kritik"},
+      {"gun": 31, "islem": "Geçici Vergi Beyannamesi (Q2)", "tip": "vergi", "onem": "yuksek"},
+      {"gun": 31, "islem": "Bağkur Prim Ödemesi (Temmuz)", "tip": "sgk", "onem": "kritik"}
+    ]
+  },
+  "hatirlatma_gunleri": [7, 3, 1],
+  "note": "Tüm tarihler 2026 yılı Gelir İdaresi Başkanlığı vergi takvimine göre düzenlenmiştir."
+}

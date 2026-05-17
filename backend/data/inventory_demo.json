@@ -1,0 +1,240 @@
+{
+  "store_name": "Esnaf.AI",
+  "last_updated": "2026-05-16",
+  "products": [
+    {
+      "id": 1,
+      "name": "Dove Şampuan 400ml",
+      "category": "kozmetik",
+      "stock": 45,
+      "min_stock": 10,
+      "cost": 85,
+      "sell_price": 139,
+      "supplier": "Toptancı Ahmet Abi",
+      "market_cost": 150
+    },
+    {
+      "id": 2,
+      "name": "Colgate Diş Macunu 100ml",
+      "category": "kozmetik",
+      "stock": 32,
+      "min_stock": 15,
+      "cost": 42,
+      "sell_price": 69,
+      "supplier": "Toptancı Ahmet Abi",
+      "market_cost": 46
+    },
+    {
+      "id": 3,
+      "name": "Pınar Süt 1L",
+      "category": "gıda",
+      "stock": 3,
+      "min_stock": 20,
+      "cost": 32,
+      "sell_price": 45,
+      "supplier": "Pınar Bayii",
+      "market_cost": 35
+    },
+    {
+      "id": 4,
+      "name": "Ülker Çikolata 80g",
+      "category": "gıda",
+      "stock": 67,
+      "min_stock": 25,
+      "cost": 18,
+      "sell_price": 29,
+      "supplier": "Ülker Distribütör",
+      "market_cost": 19
+    },
+    {
+      "id": 5,
+      "name": "Fairy Bulaşık Deterjanı 650ml",
+      "category": "ev_yasam",
+      "stock": 28,
+      "min_stock": 10,
+      "cost": 55,
+      "sell_price": 89,
+      "supplier": "Toptancı Veli",
+      "market_cost": 60
+    },
+    {
+      "id": 6,
+      "name": "Selpak Tuvalet Kağıdı 32'li",
+      "category": "ev_yasam",
+      "stock": 2,
+      "min_stock": 8,
+      "cost": 185,
+      "sell_price": 279,
+      "supplier": "Toptancı Veli",
+      "market_cost": 203
+    },
+    {
+      "id": 7,
+      "name": "Lipton Çay 1kg",
+      "category": "gıda",
+      "stock": 18,
+      "min_stock": 5,
+      "cost": 210,
+      "sell_price": 329,
+      "supplier": "Unilever",
+      "market_cost": 231
+    },
+    {
+      "id": 8,
+      "name": "Nivea Krem 150ml",
+      "category": "kozmetik",
+      "stock": 0,
+      "min_stock": 5,
+      "cost": 95,
+      "sell_price": 149,
+      "supplier": "Toptancı Ahmet Abi",
+      "market_cost": 104
+    },
+    {
+      "id": 9,
+      "name": "Energizer AA Pil 4'lü",
+      "category": "elektronik",
+      "stock": 15,
+      "min_stock": 10,
+      "cost": 65,
+      "sell_price": 99,
+      "supplier": "Metro Cash",
+      "market_cost": 71
+    },
+    {
+      "id": 10,
+      "name": "Bingo Toz Deterjan 4kg",
+      "category": "ev_yasam",
+      "stock": 22,
+      "min_stock": 8,
+      "cost": 120,
+      "sell_price": 189,
+      "supplier": "Toptancı Veli",
+      "market_cost": 132
+    },
+    {
+      "id": 11,
+      "name": "Eti Grissini 123g",
+      "category": "gıda",
+      "stock": 55,
+      "min_stock": 20,
+      "cost": 12,
+      "sell_price": 19,
+      "supplier": "Eti Distribütör",
+      "market_cost": 13
+    },
+    {
+      "id": 12,
+      "name": "Hacı Şakir Sabun 4'lü",
+      "category": "kozmetik",
+      "stock": 30,
+      "min_stock": 10,
+      "cost": 48,
+      "sell_price": 75,
+      "supplier": "Evyap",
+      "market_cost": 52
+    },
+    {
+      "id": 13,
+      "name": "Samsung USB-C Kablo",
+      "category": "elektronik",
+      "stock": 8,
+      "min_stock": 5,
+      "cost": 45,
+      "sell_price": 89,
+      "supplier": "Metro Cash",
+      "market_cost": 49
+    },
+    {
+      "id": 14,
+      "name": "Papia Kağıt Havlu 12'li",
+      "category": "ev_yasam",
+      "stock": 14,
+      "min_stock": 6,
+      "cost": 135,
+      "sell_price": 199,
+      "supplier": "Toptancı Veli",
+      "market_cost": 148
+    },
+    {
+      "id": 15,
+      "name": "Nescafe Gold 200g",
+      "category": "gıda",
+      "stock": 7,
+      "min_stock": 3,
+      "cost": 185,
+      "sell_price": 289,
+      "supplier": "Nestlé",
+      "market_cost": 203
+    },
+    {
+      "id": 16,
+      "name": "Ariel Sıvı Deterjan 1.5L",
+      "category": "ev_yasam",
+      "stock": 19,
+      "min_stock": 8,
+      "cost": 145,
+      "sell_price": 219,
+      "supplier": "P&G Distribütör",
+      "market_cost": 159
+    },
+    {
+      "id": 17,
+      "name": "Philips LED Ampul 9W",
+      "category": "elektronik",
+      "stock": 1,
+      "min_stock": 5,
+      "cost": 35,
+      "sell_price": 59,
+      "supplier": "Metro Cash",
+      "market_cost": 38
+    },
+    {
+      "id": 18,
+      "name": "Torku Banada 400g",
+      "category": "gıda",
+      "stock": 40,
+      "min_stock": 15,
+      "cost": 38,
+      "sell_price": 59,
+      "supplier": "Torku Distribütör",
+      "market_cost": 41
+    },
+    {
+      "id": 19,
+      "name": "Head&Shoulders 400ml",
+      "category": "kozmetik",
+      "stock": 25,
+      "min_stock": 10,
+      "cost": 95,
+      "sell_price": 149,
+      "supplier": "P&G Distribütör",
+      "market_cost": 104
+    },
+    {
+      "id": 20,
+      "name": "ABC Çamaşır Suyu 2.5L",
+      "category": "ev_yasam",
+      "stock": 35,
+      "min_stock": 10,
+      "cost": 42,
+      "sell_price": 69,
+      "supplier": "Toptancı Veli",
+      "market_cost": 46
+    }
+  ],
+  "summary": {
+    "total_products": 20,
+    "total_stock_value": 23840,
+    "total_retail_value": 38250,
+    "potential_profit": 14410,
+    "out_of_stock": [
+      "Nivea Krem 150ml"
+    ],
+    "low_stock": [
+      "Pınar Süt 1L",
+      "Selpak Tuvalet Kağıdı 32'li",
+      "Philips LED Ampul 9W"
+    ]
+  }
+}

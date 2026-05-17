@@ -9,7 +9,13 @@
     "kitap": 0.05,
     "oyuncak": 0.14,
     "takı_aksesuar": 0.22,
-    "otomotiv": 0.10
+    "otomotiv": 0.10,
+    "anne_bebek": 0.12,
+    "pet": 0.14,
+    "hobi": 0.16,
+    "bahce": 0.15,
+    "kırtasiye": 0.10,
+    "genel": 0.18
   },
   "hepsiburada": {
     "kozmetik": 0.14,
@@ -21,7 +27,13 @@
     "kitap": 0.04,
     "oyuncak": 0.13,
     "takı_aksesuar": 0.20,
-    "otomotiv": 0.09
+    "otomotiv": 0.09,
+    "anne_bebek": 0.11,
+    "pet": 0.13,
+    "hobi": 0.14,
+    "bahce": 0.14,
+    "kırtasiye": 0.08,
+    "genel": 0.16
   },
   "amazon_tr": {
     "kozmetik": 0.15,
@@ -33,7 +45,13 @@
     "kitap": 0.15,
     "oyuncak": 0.15,
     "takı_aksesuar": 0.20,
-    "otomotiv": 0.12
+    "otomotiv": 0.12,
+    "anne_bebek": 0.15,
+    "pet": 0.15,
+    "hobi": 0.15,
+    "bahce": 0.15,
+    "kırtasiye": 0.15,
+    "genel": 0.15
   },
   "n11": {
     "kozmetik": 0.13,
@@ -45,13 +63,21 @@
     "kitap": 0.04,
     "oyuncak": 0.12,
     "takı_aksesuar": 0.18,
-    "otomotiv": 0.08
+    "otomotiv": 0.08,
+    "anne_bebek": 0.10,
+    "pet": 0.12,
+    "hobi": 0.13,
+    "bahce": 0.12,
+    "kırtasiye": 0.07,
+    "genel": 0.14
   },
   "ciceksepeti": {
     "kozmetik": 0.18,
     "gıda": 0.15,
     "ev_yasam": 0.20,
     "oyuncak": 0.16,
-    "takı_aksesuar": 0.25
+    "takı_aksesuar": 0.25,
+    "anne_bebek": 0.14,
+    "genel": 0.20
   }
 }

@@ -83,8 +83,9 @@ Tarayıcıda → `http://localhost:3000`
 
 ## 🎥 Demo
 
-- **Canlı Uygulama:** [Deployment sonrası buraya eklenecek]
-- **Demo Videosu:** [YouTube linki]
+- **🌐 Canlı Uygulama:** [https://frontend-tau-five-cwbbvtbtho.vercel.app](https://frontend-tau-five-cwbbvtbtho.vercel.app)
+- **🔗 Backend API:** [https://esnaf-ai-backend-production.up.railway.app](https://esnaf-ai-backend-production.up.railway.app)
+- **📹 Demo Videosu:** [YouTube linki]
 
 ## 👥 Takım
 

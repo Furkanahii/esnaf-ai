@@ -1,137 +1,91 @@
-# 🏪 Esnaf.AI — Otonom Esnaf Asistanı
+# 🏪 Esnaf.AI — Dijital İş Ortağın
 
-**BTK & Google Hackathon 2026** projesi. Türkiye'deki geleneksel esnafı dijital ekonomiye entegre eden, LangGraph tabanlı otonom yapay zeka asistanı.
+> **BTK & Google Hackathon 2026** projesi
 
-## 🚀 Özellikler
+Türkiye'deki geleneksel esnafı dijital ekonomiye entegre eden, yapay zeka destekli otonom iş asistanı.
 
-- 🧠 **LangGraph Supervisor Agent** — 5 uzman ajanı yöneten otonom orkestratör
-- 🔍 **Vision Agent** — Gemini Vision ile defter/fiş fotoğrafından veri çıkarma
-- 📊 **Financial Analyst** — Nakit akışı analizi ve kritik uyarılar
-- 🛒 **E-Commerce Agent** — 5 platform karşılaştırmalı ilan hazırlama (Hybrid RAG)
-- 📦 **Inventory Agent** — Stok takibi, düşük stok uyarıları, sipariş önerileri
-- 🎙️ **Sesli Komut** — Web Speech API ile Türkçe ses tanıma
-- 💬 **WhatsApp Clone UI** — Esnaf dostu, sıfır öğrenme eğrisi
-- 🛡️ **Hybrid RAG** — Komisyon, vergi, kargo, SGK oranları yapılandırılmış DB'den (halüsinasyon yok)
-- ✅ **Human-in-the-loop** — İlan yayınlamadan önce esnaf onayı zorunlu
-- 📊 **Dashboard** — Nakit akışı grafiği, stok durumu, platform karşılaştırması, proaktif uyarılar
-- 🔔 **Proaktif Uyarılar** — Düşük stok, vadesi yaklaşan borçlar, vergi takvimi hatırlatmaları
+## 🎯 Problem
 
-## 🏗️ Mimari
+Türkiye'de 2 milyondan fazla küçük esnaf, hâlâ kâğıt defter, hesap makinesi ve tahminle iş yönetiyor. E-ticarete geçmek istiyor ama nereden başlayacağını bilmiyor. Vergi takvimlerini, komisyon oranlarını ve stok durumunu takip etmek için dijital araçlara erişimi yok.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    KULLANICI                         │
-│     WhatsApp Clone UI + Sesli Komut + Fotoğraf       │
-└───────────────────────┬─────────────────────────────┘
-                        │ SSE Stream
-                        ▼
-┌─────────────────────────────────────────────────────┐
-│              🧠 SUPERVISOR AGENT                     │
-│         (LangGraph Orkestratör — Akıllı Yönlendirme) │
-└──┬──────────┬──────────┬──────────┬─────────────────┘
-   │          │          │          │
-   ▼          ▼          ▼          ▼
-┌──────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│📸    │ │📊      │ │🛒      │ │📦      │
-│Vision│ │Finansal│ │E-Ticaret│ │Envanter│
-│Agent │ │Analist │ │ Uzmanı │ │Takibi  │
-└──┬───┘ └────┬───┘ └────┬───┘ └────┬───┘
-   │          │          │          │
-   └──────────┴──────────┴──────────┘
-                    │
-            ┌───────▼───────┐
-            │  HYBRID RAG   │
-            │ Komisyon │ KDV │
-            │ Kargo │ SGK   │
-            └───────────────┘
-```
+## 💡 Çözüm
 
-## 🏗️ Tech Stack
+**Esnaf.AI**, WhatsApp benzeri basit bir sohbet arayüzü üzerinden çalışan, 5 uzman yapay zeka asistanından oluşan otonom bir sistemdir. Esnaf sadece konuşur veya fotoğraf çeker — gerisini sistem halleder.
+
+## ✨ Özellikler
+
+| Özellik | Açıklama |
+|:--------|:---------|
+| 📸 **Fotoğrafla Veri Okuma** | Veresiye defteri, fiş veya fatura fotoğrafından otomatik borç-alacak tablosu çıkarma (Gemini Vision) |
+| 📊 **Mali Durum Analizi** | Nakit akışı, borç-alacak dengesi, tahsilat riski ve "Sağlam Esnaf Skoru" hesaplama |
+| 🛒 **E-Ticaret İlan Hazırlama** | 5 platformda (Trendyol, Hepsiburada, Amazon TR, N11, Çiçeksepeti) komisyon karşılaştırması ve SEO uyumlu ilan taslağı |
+| 📦 **Akıllı Stok Takibi** | 20 ürünlük envanter yönetimi, düşük stok uyarıları, otomatik sipariş önerileri |
+| 📡 **Mahalle Radarı** | Bölgesel piyasa trendleri, rakip fiyat analizi ve talep değişikliği uyarıları |
+| 🎙️ **Sesli Komut** | Web Speech API ile Türkçe ses tanıma desteği |
+| 🛡️ **Sıfır Halüsinasyon** | Komisyon, vergi, kargo ve SGK verileri yapılandırılmış veritabanından çekiliyor (Hybrid RAG) |
+| 📊 **Canlı Dashboard** | Nakit akışı grafiği, platform karşılaştırma barları, stok durumu, proaktif uyarılar |
+| 🔔 **Proaktif Uyarı Sistemi** | Düşük stok, vadesi yaklaşan borçlar, zararina satış, vergi takvimi hatırlatmaları |
+| 🧠 **Şeffaf Düşünce Zinciri** | Her ajanın hangi veritabanını sorguladığı ve hangi analizi yaptığı kullanıcıya adım adım gösteriliyor |
+
+## 🏗️ Kullanılan Teknolojiler
 
 | Katman | Teknoloji |
-|:-------|:---------|
-| Frontend | Next.js 16 + TailwindCSS 4 + TypeScript |
-| Backend | FastAPI + Uvicorn |
-| AI | Google Gemini 2.0 Flash + LangGraph + LangChain |
-| Streaming | Server-Sent Events (SSE) |
-| Design | Glassmorphism + Gradient Animations + Inter Font |
+|:-------|:----------|
+| **AI Orkestrasyon** | LangGraph (Supervisor-Agent mimarisi) |
+| **Yapay Zeka** | Google Gemini 2.0 Flash (Text + Vision) |
+| **Backend** | Python, FastAPI, Uvicorn |
+| **Frontend** | Next.js 16, React 19, TypeScript, TailwindCSS 4 |
+| **İletişim** | Server-Sent Events (SSE) — gerçek zamanlı streaming |
+| **Veri Katmanı** | Hybrid RAG (JSON tabanlı yapılandırılmış veri) |
+| **Tasarım** | Glassmorphism, Gradient animasyonlar, Inter font |
 
-## ⚡ Kurulum
+## 🧠 Mimari
 
-### Backend
+```
+KULLANICI (WhatsApp Clone UI + Sesli Komut + Fotoğraf)
+         │
+         ▼ SSE Stream
+   🧠 SUPERVISOR AGENT (LangGraph Orkestratör — Semantic Routing)
+         │
+    ┌────┼────┬────┬────┬────┐
+    ▼    ▼    ▼    ▼    ▼    ▼
+  📸   📊   🛒   📦   📡   💬
+Vision Finans E-Tic Stok Radar Genel
+         │
+    HYBRID RAG KATMANI
+  (Komisyon | KDV | Kargo | SGK)
+```
+
+## ⚡ Kurulum (Lokal)
+
 ```bash
+# Backend
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+echo "GOOGLE_API_KEY=senin_api_keyin" > .env
+uvicorn main:app --port 8000
 
-# .env dosyasını oluştur
-echo "GOOGLE_API_KEY=buraya_gercek_key" > .env
-
-uvicorn main:app --port 8000 --reload
-```
-
-### Frontend
-```bash
+# Frontend (yeni terminal)
 cd frontend
-npm install
-npm run dev
+npm install && npm run dev
 ```
 
-Tarayıcıda `http://localhost:3000` adresini aç.
-
-## 📁 Proje Yapısı
-
-```
-esnaf-ai/
-├── backend/
-│   ├── agent.py              # LangGraph Supervisor + 5 Uzman Agent
-│   ├── main.py               # FastAPI + SSE + Dashboard API
-│   ├── requirements.txt
-│   └── data/
-│       ├── commission_rates.json  # Hybrid RAG — komisyon oranları (5 platform)
-│       ├── tax_rules.json         # Hybrid RAG — vergi kuralları
-│       ├── inventory_demo.json    # Demo envanter (20 ürün)
-│       ├── kargo_rates.json       # Kargo fiyat tablosu (5 şirket)
-│       ├── sgk_rules.json         # Bağkur/SGK prim bilgileri
-│       └── calendar.json          # Vergi takvimi hatırlatmaları
-│
-└── frontend/
-    └── src/app/
-        ├── page.tsx               # Landing Page (Hero + Features)
-        ├── chat/page.tsx          # WhatsApp Clone Chat UI
-        ├── dashboard/page.tsx     # Analytics Dashboard
-        ├── components/
-        │   ├── Navbar.tsx         # Responsive Navigation
-        │   └── MarkdownRenderer.tsx # Markdown → HTML
-        ├── layout.tsx             # SEO + Fonts
-        └── globals.css            # Glassmorphism + Animations
-```
-
-## 🧪 API Endpoints
-
-```bash
-# Chat (SSE Stream)
-curl -N "http://localhost:8000/stream?message=merhaba"
-
-# Dashboard Data
-curl http://localhost:8000/api/dashboard
-
-# Proactive Alerts
-curl http://localhost:8000/api/alerts
-
-# Platform Comparison
-curl http://localhost:8000/api/platforms
-```
+Tarayıcıda → `http://localhost:3000`
 
 ## 📱 Sayfalar
 
-| Sayfa | URL | Açıklama |
-|:------|:----|:---------|
-| Landing | `/` | Hero, Features, Stats, Tech Stack, Architecture |
-| Chat | `/chat` | WhatsApp-style AI chat with SSE streaming |
-| Dashboard | `/dashboard` | Ring charts, bar charts, alerts, transactions |
+| Sayfa | Açıklama |
+|:------|:---------|
+| `/` | Landing page — Ürün tanıtımı, özellikler, nasıl çalışır akışı |
+| `/chat` | WhatsApp tarzı AI sohbet arayüzü (SSE streaming + düşünce adımları) |
+| `/dashboard` | Gerçek zamanlı mali analiz, stok durumu, platform karşılaştırması, uyarılar |
+
+## 🎥 Demo
+
+- **Canlı Uygulama:** [Deployment sonrası buraya eklenecek]
+- **Demo Videosu:** [YouTube linki]
 
 ## 👥 Takım
 
-BTK & Google Hackathon 2026
+BTK & Google Hackathon 2026 — Esnaf.AI

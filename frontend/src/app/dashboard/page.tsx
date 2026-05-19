@@ -12,6 +12,7 @@ type DashboardData = {
     is_critical: boolean;
     items: { name: string; amount: number; type: string; date: string; instrument_type?: string; risk_score?: number }[];
     assets?: { name: string; value: number; monthly_depreciation: number }[];
+    esnaf_score?: number;
   };
   inventory: {
     total_products: number;
@@ -33,6 +34,22 @@ type AlertItem = { type: string; msg: string };
 
 function formatMoney(n: number) {
   return n.toLocaleString("tr-TR");
+}
+
+function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) { setCount(0); return; }
+    const step = Math.max(1, Math.floor(target / 40));
+    const timer = setInterval(() => {
+      setCount(prev => {
+        if (prev + step >= target) { clearInterval(timer); return target; }
+        return prev + step;
+      });
+    }, 30);
+    return () => clearInterval(timer);
+  }, [target]);
+  return <>{count.toLocaleString("tr-TR")}{suffix}</>;
 }
 
 function RingChart({ debt, recv, cash }: { debt: number; recv: number; cash: number }) {
@@ -177,9 +194,14 @@ export default function DashboardPage() {
             </h1>
             <p className="text-sm text-[#8696a0] mt-1">Anlık mali durum ve stok takibi</p>
           </div>
-          <Link href="/chat" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold text-sm hover:scale-105 transition-all shadow-lg shadow-emerald-900/30">
-            💬 AI ile Konuş
-          </Link>
+          <div className="flex gap-3">
+            <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-sm hover:bg-white/10 hover:scale-105 transition-all shadow-lg hidden sm:block">
+              📥 Rapor İndir
+            </button>
+            <Link href="/chat" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold text-sm hover:scale-105 transition-all shadow-lg shadow-emerald-900/30">
+              💬 AI ile Konuş
+            </Link>
+          </div>
         </div>
 
         {/* Alerts */}
@@ -226,17 +248,41 @@ export default function DashboardPage() {
               </div>
             </div>
             
+            {/* Mini Cash Flow Sparkline */}
+            <div className="mt-4 pt-3 border-t border-white/5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-[#8696a0] font-medium">📈 Nakit Akışı Trendi (Son 7 Gün)</span>
+              </div>
+              <svg viewBox="0 0 200 40" className="w-full h-10">
+                <defs>
+                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(0,168,132,0.3)" />
+                    <stop offset="100%" stopColor="rgba(0,168,132,0)" />
+                  </linearGradient>
+                </defs>
+                <path d="M0,32 L28,28 L57,35 L85,22 L114,25 L142,15 L171,18 L200,10" fill="none" stroke="#00a884" strokeWidth="2" strokeLinecap="round" style={{ filter: "drop-shadow(0 0 4px rgba(0,168,132,0.5))" }}>
+                  <animate attributeName="stroke-dasharray" from="0 500" to="500 0" dur="1.5s" fill="freeze" />
+                </path>
+                <path d="M0,32 L28,28 L57,35 L85,22 L114,25 L142,15 L171,18 L200,10 L200,40 L0,40 Z" fill="url(#sparkGrad)" opacity="0.5">
+                  <animate attributeName="opacity" from="0" to="0.5" dur="1.5s" fill="freeze" />
+                </path>
+              </svg>
+            </div>
+            
             {/* Esnaf Score & Depreciation */}
             <div className="mt-4 pt-4 border-t border-white/5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-[#aebac1]">🛡️ Sağlam Esnaf Skoru</span>
-                <span className={`text-sm font-black ${fin.net < 0 ? "text-orange-400" : "text-emerald-400"}`}>
-                  {fin.net < 0 ? "65" : "85"}<span className="text-[10px] text-[#8696a0]">/100</span>
+                <span className={`text-sm font-black ${(fin.esnaf_score || 0) < 70 ? "text-orange-400" : "text-emerald-400"}`}>
+                  <AnimatedCounter target={fin.esnaf_score || 85} /><span className="text-[10px] text-[#8696a0]">/100</span>
                 </span>
+              </div>
+              <div className="w-full bg-[#111b21] rounded-full h-1.5 overflow-hidden">
+                <div className={`h-full ${(fin.esnaf_score || 0) < 70 ? "bg-orange-500" : "bg-emerald-500"}`} style={{ width: `${fin.esnaf_score || 85}%`, transition: "width 1.5s ease-out" }} />
               </div>
               
               {fin.assets && fin.assets.length > 0 && (
-                <div className="bg-red-900/10 border border-red-900/30 rounded-xl p-3">
+                <div className="bg-red-900/10 border border-red-900/30 rounded-xl p-3 mt-4">
                   <div className="text-[10px] text-red-400 font-bold mb-1">⚠️ GİZLİ ZARAR (Aylık Yıpranma)</div>
                   {fin.assets.map((a, i) => (
                     <div key={i} className="flex justify-between text-[10px] text-[#8696a0]">
@@ -253,20 +299,28 @@ export default function DashboardPage() {
           <div className="glass rounded-2xl p-6" style={{ animation: "slideUp 0.5s ease 0.2s both" }}>
             <h3 className="text-sm font-bold text-[#aebac1] mb-4">📦 Stok Durumu</h3>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/5 rounded-xl p-3 text-center">
-                <div className="text-2xl font-black gradient-text">{inv.total_products}</div>
+              <div className="bg-white/5 rounded-xl p-3 text-center hover:bg-white/10 transition-colors">
+                <div className="text-2xl font-black gradient-text">
+                  <AnimatedCounter target={inv.total_products} />
+                </div>
                 <div className="text-[10px] text-[#8696a0]">Toplam Ürün</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-3 text-center">
-                <div className="text-2xl font-black text-emerald-400">{formatMoney(inv.potential_profit)}₺</div>
+              <div className="bg-white/5 rounded-xl p-3 text-center hover:bg-white/10 transition-colors">
+                <div className="text-2xl font-black text-emerald-400">
+                  <AnimatedCounter target={inv.potential_profit} suffix="₺" />
+                </div>
                 <div className="text-[10px] text-[#8696a0]">Potansiyel Kâr</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-3 text-center">
-                <div className="text-2xl font-black text-red-400">{inv.out_of_stock?.length || 0}</div>
+              <div className="bg-white/5 rounded-xl p-3 text-center hover:bg-white/10 transition-colors">
+                <div className="text-2xl font-black text-red-400">
+                  <AnimatedCounter target={inv.out_of_stock?.length || 0} />
+                </div>
                 <div className="text-[10px] text-[#8696a0]">Biten Ürün</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-3 text-center">
-                <div className="text-2xl font-black text-amber-400">{inv.low_stock?.length || 0}</div>
+              <div className="bg-white/5 rounded-xl p-3 text-center hover:bg-white/10 transition-colors">
+                <div className="text-2xl font-black text-amber-400">
+                  <AnimatedCounter target={inv.low_stock?.length || 0} />
+                </div>
                 <div className="text-[10px] text-[#8696a0]">Azalan Stok</div>
               </div>
             </div>
@@ -345,7 +399,7 @@ export default function DashboardPage() {
                 <span className="text-xs px-2 py-1 bg-white/5 rounded-md text-emerald-400">{radar.location}</span>
               </div>
               <div className="space-y-3">
-                {radar.trends.map((t, i) => (
+                {radar.trends?.map((t, i) => (
                   <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/5">
                     <div className="flex justify-between items-start mb-1">
                       <div className="text-sm font-medium text-white">{t.product_name}</div>

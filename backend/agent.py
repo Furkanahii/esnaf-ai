@@ -43,6 +43,7 @@ class AgentState(TypedDict):
     proactive_alerts: Optional[list]
     financial_risk_report: Optional[dict]
     market_insights: Optional[list]
+    thought_process: Optional[list]
 
 
 # --- GEMINI HELPER ---
@@ -76,67 +77,44 @@ def normalize_turkish(text: str) -> str:
 
 
 def detect_intent(text: str, has_image: bool) -> str:
-    """Detect user intent from message — returns agent name."""
-    normalized = normalize_turkish(text)
-    
-    # Image → always vision
+    """Detect user intent from message using LLM semantic routing — returns agent name."""
     if has_image:
         return "vision_agent"
     
-    # Vision keywords (photo, notebook, receipt)
-    vision_words = [
-        "foto", "resim", "gorsel", "goruntu", "defter", "fis", "fatura",
-        "kamera", "cek", "yukle", "tara", "oku", "bak", "incele",
-        "fotografin", "resmini", "defteri", "not defteri",
-        "fisin", "faturan", "makbuz", "dekont",
-    ]
-    if any(w in normalized for w in vision_words):
-        return "vision_agent"
-    
-    # Financial keywords
-    finance_words = [
-        "durum", "borc", "alacak", "nakit", "kasa", "hesap", "para",
-        "gelir", "gider", "kar", "zarar", "maliyet", "masraf", "butce",
-        "analiz", "rapor", "ozet", "mali", "finans", "tutar", "toplam",
-        "odeme", "tahsil", "veresiye", "bakiye", "ciro", "kazanc",
-        "ne kadar", "kac lira", "kac tl", "nedir", "nasil",
-        "odeyeceg", "borcum", "alacagim", "kasada", "param",
-        "sgk", "bagkur", "prim", "vergi", "kdv", "muhtasar",
-    ]
-    if any(w in normalized for w in finance_words):
-        return "financial_analyst_agent"
-    
-    # Inventory keywords
-    inventory_words = [
-        "stok", "envanter", "urun", "raf", "depo", "sayim",
-        "bitti", "kalmadi", "azaldi", "siparis", "tedarikcr",
-        "listele", "urunler", "ne var", "neler var",
-    ]
-    if any(w in normalized for w in inventory_words):
-        return "inventory_agent"
+    # Semantic Routing Prompt
+    prompt = f"""Sen bir yapay zeka yönlendiricisisin (Semantic Router).
+Kullanıcının mesajını analiz et ve en uygun uzman ajanı seç.
+Mesaj: "{text}"
 
-    # E-commerce keywords
-    ecommerce_words = [
-        "sat", "satis", "ilan", "magaza", "fiyat",
-        "trendyol", "hepsiburada", "amazon", "n11", "ciceksepeti",
-        "e-ticaret", "eticaret", "online", "internet",
-        "komisyon", "kargo", "liste", "yayinla", "pazarlama",
-        "seo", "baslik", "aciklama",
-        "kazandir", "satabili", "satayim", "satalim",
-        "platform", "pazaryeri", "marj", "gonderim",
-    ]
-    if any(w in normalized for w in ecommerce_words):
-        return "ecommerce_agent"
+Ajanlar ve Görevleri:
+- "vision_agent": Fotoğraf, belge, defter, fiş, fatura okuma ve analiz işlemleri.
+- "financial_analyst_agent": Borç, alacak, bakiye, mali durum, kar/zarar analizi, kâr, zarar hesaplama, tahsilat.
+- "ecommerce_agent": Ürün satma, ilan açma, platform komisyonları, e-ticaret siteleri (Trendyol vb.).
+- "inventory_agent": Stok durumu, envanter, ürün sayıları, depo kontrolü, azalan ürünler, ne var ne yok.
+- "neighborhood_agent": Mahalle trendleri, piyasa durumu, rakip fiyat analizi.
+- "general_chat": Sadece selamlaşma veya yukarıdakilere uymayan genel sohbet/sorular.
+
+Yanıtın SADECE ajan adından (string) oluşmalıdır. Başka hiçbir açıklama, noktalama işareti veya metin yazma."""
+
+    result = call_gemini(prompt)
+    if result:
+        res = result.strip().lower()
+        valid_agents = [
+            "vision_agent", "financial_analyst_agent", "ecommerce_agent",
+            "inventory_agent", "neighborhood_agent", "general_chat"
+        ]
+        for va in valid_agents:
+            if va in res:
+                return va
+                
+    # Fallback keyword matching (if LLM fails)
+    normalized = normalize_turkish(text)
+    if any(w in normalized for w in ["foto", "resim", "defter", "fis", "fatura"]): return "vision_agent"
+    if any(w in normalized for w in ["durum", "borc", "alacak", "nakit", "para", "mali"]): return "financial_analyst_agent"
+    if any(w in normalized for w in ["stok", "envanter", "urun", "depo"]): return "inventory_agent"
+    if any(w in normalized for w in ["sat", "ilan", "trendyol", "hepsiburada", "e-ticaret"]): return "ecommerce_agent"
+    if any(w in normalized for w in ["mahalle", "piyasa", "rakip", "trend"]): return "neighborhood_agent"
     
-    # Neighborhood / Market keywords
-    market_words = [
-        "mahalle", "piyasa", "rakip", "trend", "diger", "fiyatlar",
-        "ne satiyor", "bölge", "getir", "çevre"
-    ]
-    if any(w in normalized for w in market_words):
-        return "neighborhood_agent"
-    
-    # If nothing matched → general chat (supervisor handles it)
     return "general_chat"
 
 
@@ -304,6 +282,11 @@ def supervisor_node(state: AgentState):
         "neighborhood_agent": "📡 Mahalledeki piyasa durumuna bakıyorum abi...",
     }
     
+    thought_process = [
+        f"Kullanıcı mesajı analiz edildi: '{last_msg}'",
+        f"Semantic Router '{intent}' ajanına yönlendirme kararı aldı."
+    ]
+    
     alerts = build_proactive_alerts(state.get("extracted_financial_data"))
     
     if intent in route_responses:
@@ -312,6 +295,7 @@ def supervisor_node(state: AgentState):
             "next_agent": intent,
             "active_agent": "supervisor",
             "proactive_alerts": alerts,
+            "thought_process": thought_process,
         }
     
     # General chat — try Gemini first, then smart mock
@@ -344,7 +328,8 @@ Samimi esnaf diliyle kısa yanıt ver. Yapabileceklerinden bahset ama liste hali
     return {
         "messages": [AIMessage(content=response)],
         "next_agent": END,
-        "active_agent": "supervisor"
+        "active_agent": "supervisor",
+        "thought_process": thought_process + ["Genel sohbet yanıtı oluşturuldu."]
     }
 
 
@@ -352,8 +337,10 @@ def vision_agent_node(state: AgentState):
     """Vision Agent — Analyzes photos or provides demo data."""
     image_b64 = state.get("image_b64")
     extracted_data = None
+    thought_process = ["Görme (Vision) ajanı devreye girdi."]
     
     if image_b64:
+        thought_process.append("OCR işlemi başlatıldı, görseldeki finansal veriler ayıklanıyor...")
         vision_prompt = """Bu bir Türk esnafının veresiye defteri, fişi veya faturasının fotoğrafı.
 Görseldeki TÜM finansal verileri çıkar ve SADECE şu JSON formatında yanıt ver:
 {
@@ -382,11 +369,13 @@ SADECE JSON döndür, başka hiçbir şey yazma."""
                     extracted_data["total_receivable"] = sum(i.get("amount", 0) for i in items if i.get("type") == "alacak")
                 if "cash" not in extracted_data:
                     extracted_data["cash"] = 0
+                thought_process.append(f"Görselden {len(extracted_data.get('items', []))} adet veri başarıyla çıkarıldı.")
             except json.JSONDecodeError:
-                pass
+                thought_process.append("Veri okuma hatası: JSON dönüştürme başarısız oldu.")
     
     # Rich demo data when no image or Gemini unavailable
     if not extracted_data:
+        thought_process.append("Görsel sağlanmadı veya analiz edilemedi, demo defter verileri yükleniyor.")
         extracted_data = {
             "items": [
                 {"name": "Toptancı Ahmet Abi", "amount": 12500, "type": "borc", "date": "05.05.2026"},
@@ -425,7 +414,8 @@ SADECE JSON döndür, başka hiçbir şey yazma."""
         "extracted_financial_data": extracted_data,
         "messages": [AIMessage(content=msg)],
         "next_agent": "financial_analyst_agent",
-        "active_agent": "vision_agent"
+        "active_agent": "vision_agent",
+        "thought_process": thought_process + ["Veri analizi tamamlandı."]
     }
 
 
@@ -433,8 +423,13 @@ def financial_analyst_node(state: AgentState):
     """Financial Analyst — Cash flow analysis and actionable advice."""
     data = state.get("extracted_financial_data")
     
+    thought_process = ["Finansal analiz ajanı devreye girdi."]
+    
     if not data:
         data = {"total_debt": 25550, "total_receivable": 6800, "cash": 4200, "items": []}
+        thought_process.append("Mali veriler bulunamadı, demo veriler üzerinden analiz yapılıyor.")
+    else:
+        thought_process.append("Kullanıcının mali verileri (borç/alacak/kasa) yüklendi.")
     
     total_debt = data.get("total_debt", 0)
     total_recv = data.get("total_receivable", 0)
@@ -442,9 +437,13 @@ def financial_analyst_node(state: AgentState):
     net = cash + total_recv - total_debt
     is_critical = net < 0
     
+    if is_critical:
+        thought_process.append(f"Kritik nakit açığı tespit edildi: {net} TL. Risk senaryoları çalıştırılıyor.")
+    
     # Try Gemini
     sgk_info = get_sgk_info()
     bagkur_prim = sgk_info.get("bagkur", {}).get("aylik_prim_2026", {}).get("alt_sinir", 3150)
+    thought_process.append(f"Tool Çağrısı: get_sgk_info() -> Bağkur Primi: {bagkur_prim} TL")
     
     # Calculate risks explicitly
     risk_report = {"high_risk_collections": [], "discount_losses": []}
@@ -558,13 +557,16 @@ Esnaf Sağlamlık Skoru: {health_score}/100
         "kritik_nakit_acigi": is_critical,
         "messages": [AIMessage(content=msg)],
         "next_agent": END,
-        "active_agent": "financial_analyst"
+        "active_agent": "financial_analyst",
+        "thought_process": thought_process + ["Finansal analiz tamamlandı, eylem önerileri oluşturuldu."]
     }
 
 
 def ecommerce_agent_node(state: AgentState):
     """E-Commerce Agent — Multi-platform comparison + SEO listing."""
     category = "genel"
+    
+    thought_process = ["E-Ticaret ajanı devreye girdi."]
     
     messages = state.get("messages", [])
     last_user_msg = ""
@@ -574,6 +576,7 @@ def ecommerce_agent_node(state: AgentState):
             break
     
     normalized = normalize_turkish(last_user_msg)
+    thought_process.append(f"Kullanıcı talebi analiz ediliyor: '{last_user_msg}'")
     
     # Detect category
     cat_keywords = {
@@ -600,6 +603,7 @@ def ecommerce_agent_node(state: AgentState):
     
     # Multi-platform comparison
     comparison_text = compare_all_platforms(category)
+    thought_process.append(f"Tool Çağrısı: compare_all_platforms(category='{category}')")
     
     # Auto-pick cheapest platform
     if not platform:
@@ -622,6 +626,12 @@ def ecommerce_agent_node(state: AgentState):
     # PTT Kargo'yu baz al (genelde en uygun)
     kargo_base = kargo_data.get("ptt_kargo", {}).get("base_price", 32.00)
     kargo_name = kargo_data.get("ptt_kargo", {}).get("name", "PTT Kargo")
+    
+    thought_process.extend([
+        f"Tool Çağrısı: get_commission_rate(platform='{platform}', category='{category}') -> %{int(commission*100)}",
+        f"Tool Çağrısı: get_tax_info('basit_usul') -> KDV: %{int(kdv*100)}",
+        f"Tool Çağrısı: get_kargo_rates() -> {kargo_name}: {kargo_base} TL"
+    ])
     
     if commission == -1.0:
         commission = 0.20
@@ -697,13 +707,17 @@ Samimi esnaf diliyle yaz."""
         "ecommerce_draft_ready": True,
         "messages": [AIMessage(content=msg)],
         "next_agent": END,
-        "active_agent": "ecommerce_agent"
+        "active_agent": "ecommerce_agent",
+        "thought_process": thought_process + ["SEO uyumlu ilan ve maliyet hesaplaması tamamlandı."]
     }
 
 
 def inventory_agent_node(state: AgentState):
     """Inventory Agent — Stock tracking, low stock alerts, reorder suggestions."""
+    thought_process = ["Envanter (Stok) ajanı devreye girdi."]
+    
     inv = get_inventory_data()
+    thought_process.append("Tool Çağrısı: get_inventory_data() -> Stok verileri çekildi.")
     products = inv.get("products", [])
     summary = inv.get("summary", {})
 
@@ -722,6 +736,8 @@ def inventory_agent_node(state: AgentState):
     out_of_stock = [p for p in products if p["stock"] == 0]
     low_stock = [p for p in products if 0 < p["stock"] <= p["min_stock"]]
     healthy = [p for p in products if p["stock"] > p["min_stock"]]
+    
+    thought_process.append(f"Kritik stok seviyeleri hesaplanıyor: Biten ({len(out_of_stock)}), Azalan ({len(low_stock)})")
 
     gemini_prompt = f"""Bir esnafın stok durumunu analiz et. Samimi esnaf ağabeyi gibi konuş.
 Toplam {len(products)} ürün. Stokta olmayan: {len(out_of_stock)}. Azalan: {len(low_stock)}. Sağlıklı: {len(healthy)}.
@@ -760,19 +776,24 @@ Rayiç bedel (market_cost) altında satılan, zararına satış yapılan ürünl
     return {
         "messages": [AIMessage(content=msg)],
         "next_agent": END,
-        "active_agent": "inventory_agent"
+        "active_agent": "inventory_agent",
+        "thought_process": thought_process + ["Stok analizi tamamlandı, özet oluşturuldu."]
     }
 
 
 def neighborhood_agent_node(state: AgentState):
     """Neighborhood Agent — Market intelligence and swarm insights."""
+    thought_process = ["Mahalle Radarı ajanı devreye girdi."]
+    
     trends_data = get_neighborhood_trends()
     location = trends_data.get("location", "Bölge")
     trends = trends_data.get("trends", [])
+    thought_process.append(f"Tool Çağrısı: get_neighborhood_trends() -> {location} bölgesi trendleri çekildi.")
     
     # Get user inventory to cross-reference
     inv = get_inventory_data()
     products = inv.get("products", [])
+    thought_process.append("Esnafın stok verileri dış piyasa trendleriyle çapraz eşleştiriliyor...")
     
     # Sadece 3-4 random ürünü gönderelim ki prompt limiti şişmesin
     import random
@@ -806,7 +827,8 @@ Samimi esnaf ağzıyla, 3-4 cümleyi geçmeden doğrudan (actionable) konuş.
     return {
         "messages": [AIMessage(content=msg)],
         "next_agent": END,
-        "active_agent": "neighborhood_agent"
+        "active_agent": "neighborhood_agent",
+        "thought_process": thought_process + ["Rakip fiyat ve talep analizi tamamlandı."]
     }
 
 

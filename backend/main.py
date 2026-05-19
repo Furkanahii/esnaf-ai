@@ -63,6 +63,17 @@ def get_dashboard():
     """Dashboard data — financial summary + inventory summary."""
     inv = get_inventory_data()
     net = last_financial_data["cash"] + last_financial_data["total_receivable"] - last_financial_data["total_debt"]
+    
+    # Calculate Dynamic AI Esnaf Score
+    score = 100
+    if net < 0:
+        score -= min(30, abs(net) // 1000)
+    if last_financial_data["total_debt"] > (last_financial_data["total_receivable"] + last_financial_data["cash"]) * 1.5:
+        score -= 15
+    out_of_stock = inv.get("summary", {}).get("out_of_stock", [])
+    score -= len(out_of_stock) * 2
+    score = max(10, min(100, score))
+    
     return {
         "financial": {
             "total_debt": last_financial_data["total_debt"],
@@ -72,6 +83,7 @@ def get_dashboard():
             "is_critical": net < 0,
             "items": last_financial_data["items"],
             "assets": last_financial_data.get("assets", []),
+            "esnaf_score": score
         },
         "inventory": inv.get("summary", {}),
         "store_name": inv.get("store_name", "Esnaf Dükkanı"),
@@ -151,6 +163,7 @@ async def generate_graph_stream(message: str, image_b64: Optional[str] = None):
                 "is_actionable": node_state.get("ecommerce_draft_ready", False),
                 "is_critical": node_state.get("kritik_nakit_acigi", False),
                 "alerts": node_state.get("proactive_alerts", []),
+                "thought_process": node_state.get("thought_process", []),
             }
             yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
             await asyncio.sleep(1.5)

@@ -12,6 +12,7 @@ type Message = {
   agent?: string;
   time: string;
   imagePreview?: string;
+  thoughtProcess?: string[];
 };
 
 type AlertItem = { type: string; msg: string };
@@ -22,6 +23,7 @@ const AGENT_BADGES: Record<string, { icon: string; label: string; color: string 
   financial_analyst: { icon: "📊", label: "Finans", color: "bg-amber-700" },
   ecommerce_agent: { icon: "🛒", label: "E-Ticaret", color: "bg-purple-700" },
   inventory_agent: { icon: "📦", label: "Envanter", color: "bg-teal-700" },
+  neighborhood_agent: { icon: "📡", label: "Mahalle Radarı", color: "bg-rose-700" },
 };
 
 const QUICK_ACTIONS = [
@@ -29,6 +31,7 @@ const QUICK_ACTIONS = [
   { icon: "📊", label: "Mali Durumum", msg: "Durumum nedir, borçlarıma bak" },
   { icon: "🛒", label: "Ürün Sat", msg: "Trendyol'da şampuan satmak istiyorum" },
   { icon: "📦", label: "Stok Kontrol", msg: "Stoktaki ürünleri listele" },
+  { icon: "📡", label: "Mahalle Radarı", msg: "Mahalledeki piyasa durumuna bak" },
   { icon: "💰", label: "Vergi Hesapla", msg: "Vergi durumumu hesapla" },
 ];
 
@@ -50,6 +53,7 @@ export default function ChatPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -143,13 +147,14 @@ export default function ChatPage() {
     await handleSendDirect();
   };
 
-  const addAgentMessage = (data: { node: string; agent?: string; content: string; is_actionable?: boolean; is_critical?: boolean }) => {
+  const addAgentMessage = (data: { node: string; agent?: string; content: string; is_actionable?: boolean; is_critical?: boolean; thought_process?: string[] }) => {
     const agentKey = data.agent || data.node;
     setMessages(prev => [...prev, {
       id: Date.now() + Math.random(),
       role: data.node === "supervisor" ? "supervisor" : "system",
       content: data.content, agent: agentKey,
       isActionable: data.is_actionable, isCritical: data.is_critical,
+      thoughtProcess: data.thought_process,
       time: now(),
     }]);
   };
@@ -227,7 +232,6 @@ export default function ChatPage() {
       const transcript = e.results[0][0].transcript;
       setInput(prev => {
         const newText = prev + (prev ? " " : "") + transcript;
-        setTimeout(() => handleSendDirect(newText), 100);
         return newText;
       });
     };
@@ -262,6 +266,7 @@ export default function ChatPage() {
               <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center animate-pulse">{alerts.length}</span>
             </button>
           )}
+          <button onClick={() => setShowStats(!showStats)} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-[#aebac1] hover:bg-white/10 transition-colors font-medium" title="Konuşma İstatistikleri">📈 {messages.length - 1}</button>
           <a href="/dashboard" className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-colors font-medium">📊 Dashboard</a>
           <button onClick={() => fetch("/reset", { method: "POST" }).then(() => { setMessages([messages[0]]); setShowQuickActions(true); })} className="text-xs px-3 py-1.5 rounded-lg border border-[#8696a0]/30 text-[#8696a0] hover:bg-white/5 transition-colors">Sıfırla</button>
         </div>
@@ -275,6 +280,40 @@ export default function ChatPage() {
               {a.msg}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Conversation Stats */}
+      {showStats && (
+        <div className="bg-[#182229] border-b border-white/5 px-4 py-3" style={{ animation: "slideDown 0.3s ease" }}>
+          <div className="mx-auto max-w-3xl grid grid-cols-4 gap-3">
+            {(() => {
+              const userMsgs = messages.filter(m => m.role === "user").length;
+              const aiMsgs = messages.filter(m => m.role !== "user").length;
+              const agentTypes = new Set(messages.filter(m => m.agent && m.agent !== "supervisor").map(m => m.agent));
+              const thoughtSteps = messages.reduce((acc, m) => acc + (m.thoughtProcess?.length || 0), 0);
+              return (
+                <>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-emerald-400">{userMsgs}</div>
+                    <div className="text-[9px] text-[#8696a0]">Mesajlarınız</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-blue-400">{aiMsgs}</div>
+                    <div className="text-[9px] text-[#8696a0]">AI Yanıtları</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-purple-400">{agentTypes.size}</div>
+                    <div className="text-[9px] text-[#8696a0]">Ajan Devrede</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-amber-400">{thoughtSteps}</div>
+                    <div className="text-[9px] text-[#8696a0]">Düşünce Adımı</div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
 
@@ -317,6 +356,19 @@ export default function ChatPage() {
                     {msg.imagePreview && (
                       <img src={msg.imagePreview} alt="Yüklenen görsel" className="rounded-lg max-h-48 w-full object-cover mb-2 shadow-sm" />
                     )}
+                    
+                    {/* Thought Process Steps */}
+                    {msg.thoughtProcess && msg.thoughtProcess.length > 0 && (
+                      <div className="mb-3 space-y-1.5">
+                        {msg.thoughtProcess.map((step, i) => (
+                          <div key={i} className="flex items-start gap-2 text-[11px] text-[#aebac1] bg-black/20 rounded-md px-2 py-1.5 border border-white/5" style={{ animation: `fadeIn 0.3s ease ${i * 0.15}s both` }}>
+                            <span className="text-emerald-500 mt-0.5">✓</span>
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     {msg.role === "user" ? (
                       <p className="text-[14.5px] leading-snug whitespace-pre-wrap">{msg.content}</p>
                     ) : (
@@ -371,6 +423,26 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Voice Listening Overlay */}
+      {isListening && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-all duration-300">
+          <div className="flex flex-col items-center">
+            <div className="relative flex items-center justify-center w-32 h-32 mb-6">
+              <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-30"></div>
+              <div className="absolute inset-2 bg-red-500 rounded-full animate-pulse opacity-50"></div>
+              <div className="relative z-10 w-20 h-20 bg-gradient-to-tr from-red-600 to-red-400 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(239,68,68,0.6)]">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="white"><path d="M11.999 14.942c2.001 0 3.531-1.53 3.531-3.531V4.35c0-2.001-1.53-3.531-3.531-3.531S8.469 2.349 8.469 4.35v7.061c0 2.001 1.53 3.531 3.53 3.531zm6.238-3.53c0 3.531-2.942 6.002-6.237 6.002s-6.237-2.471-6.237-6.002H3.761c0 4.001 3.178 7.297 7.061 7.885v3.884h2.354v-3.884c3.884-.588 7.061-3.884 7.061-7.885h-2.002z" /></svg>
+              </div>
+            </div>
+            <p className="text-2xl font-semibold text-white tracking-wide animate-pulse">Dinliyorum...</p>
+            <p className="text-[#aebac1] mt-2 text-sm max-w-xs text-center">Esnaf.AI seni dinliyor. Konuşman bittiğinde söylediklerin mesaj kutusuna eklenecek.</p>
+            <button onClick={() => setIsListening(false)} className="mt-8 px-6 py-2 rounded-full border border-white/20 text-white hover:bg-white/10 transition-colors">
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Image Preview */}
       {imagePreviewUrl && (

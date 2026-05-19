@@ -4,25 +4,31 @@ import Navbar from "./components/Navbar";
 import { useEffect, useState } from "react";
 
 const FEATURES = [
-  { icon: "📸", title: "Vision Agent", desc: "Defter/fiş fotoğrafından otomatik veri çıkarma. Gemini Vision ile doğrudan analiz.", color: "from-blue-500 to-cyan-500" },
-  { icon: "📊", title: "Finansal Analist", desc: "Nakit akışı, borç-alacak analizi ve proaktif uyarılar. Krizden önce haberdar ol.", color: "from-amber-500 to-orange-500" },
-  { icon: "🛒", title: "E-Ticaret Uzmanı", desc: "5 platformda komisyon karşılaştırması, SEO uyumlu ilan hazırlama. Hybrid RAG ile sıfır halüsinasyon.", color: "from-purple-500 to-pink-500" },
-  { icon: "📦", title: "Stok Takibi", desc: "Envanter yönetimi, düşük stok uyarıları ve otomatik sipariş önerileri.", color: "from-emerald-500 to-teal-500" },
+  { icon: "📸", title: "Fotoğrafla Veri Okuma", desc: "Veresiye defterinin, fişin veya faturanın fotoğrafını çek — yapay zeka anında borç-alacak tablosunu çıkarsın.", color: "from-blue-500 to-cyan-500" },
+  { icon: "📊", title: "Mali Durum Analizi", desc: "Kasandaki nakit, borçların, alacakların ve riskli müşterilerin tam röntgenini çek. Krizden önce haberdar ol.", color: "from-amber-500 to-orange-500" },
+  { icon: "🛒", title: "E-Ticaret İlan Hazırlama", desc: "5 farklı platformda en düşük komisyonlu satış kanalını bul, SEO uyumlu ilan taslağını saniyede hazırla.", color: "from-purple-500 to-pink-500" },
+  { icon: "📦", title: "Akıllı Stok Takibi", desc: "Hangi ürün bitiyor, hangisi azalıyor? Otomatik sipariş önerileri ile rafın boş kalmasın.", color: "from-emerald-500 to-teal-500" },
+  { icon: "📡", title: "Mahalle Radarı", desc: "Bölgendeki fiyat trendlerini ve rakiplerin durumunu takip et. Talebi artan ürünleri kaçırma.", color: "from-rose-500 to-red-500" },
+  { icon: "🎙️", title: "Sesli Komut Desteği", desc: "Ellerini kullanamıyor musun? Mikrofona konuş, Esnaf.AI seni anlasın ve hemen işine baksın.", color: "from-indigo-500 to-violet-500" },
 ];
 
 const STATS = [
-  { value: 5, suffix: "", label: "Uzman Agent", icon: "🧠" },
+  { value: 5, suffix: "", label: "Uzman Asistan", icon: "🧠" },
   { value: 5, suffix: "+", label: "E-Ticaret Platformu", icon: "🛒" },
-  { value: 0, suffix: "", label: "Halüsinasyon (Hybrid RAG)", icon: "🛡️" },
-  { value: 100, suffix: "%", label: "Türkçe Desteği", icon: "🇹🇷" },
+  { value: 20, suffix: "+", label: "Ürün Takibi", icon: "📦" },
+  { value: 100, suffix: "%", label: "Türkçe Destek", icon: "🇹🇷" },
 ];
 
-const TECH = [
-  { name: "LangGraph", desc: "Multi-Agent Orkestrasyon" },
-  { name: "Gemini 2.0", desc: "Vision + Text AI" },
-  { name: "FastAPI", desc: "SSE Streaming" },
-  { name: "Next.js 16", desc: "React Server Components" },
-  { name: "Hybrid RAG", desc: "Sıfır Halüsinasyon" },
+const HOW_IT_WORKS = [
+  { step: "1", title: "Mesajını Yaz veya Fotoğraf Çek", desc: "Veresiye defterini fotoğrafla, mali durumunu sor veya ürün sat demeni yeterli.", icon: "✍️" },
+  { step: "2", title: "Yapay Zeka Analiz Etsin", desc: "Esnaf.AI mesajını anlayıp doğru uzmana yönlendiriyor. Arka planda vergi, komisyon ve stok verilerini çekiyor.", icon: "🤖" },
+  { step: "3", title: "Sonucunu Al, Kararını Ver", desc: "Borç-alacak tablosu, e-ticaret ilanı veya stok raporu hazır. Onaylarsan yayına alınsın!", icon: "✅" },
+];
+
+const TESTIMONIALS = [
+  { name: "Bakkal Mehmet", location: "Kadıköy", text: "Veresiye defterimi fotoğrafladım, 2 saniyede borç-alacak tablosu çıktı. Artık defter karıştırmıyorum!", avatar: "🧔" },
+  { name: "Tuhafiyeci Ayşe", location: "Beşiktaş", text: "Trendyol'a ilan açmayı bilmiyordum. Esnaf.AI başlık bile yazdı, tek tuşla yayına aldım.", avatar: "👩" },
+  { name: "Manav Hüseyin", location: "Üsküdar", text: "Stokta hangi ürün bitiyor diye her gün sayardım. Şimdi sistem bana uyarı gönderiyor.", avatar: "👨‍🌾" },
 ];
 
 function AnimatedCounter({ target, suffix }: { target: number; suffix: string }) {
@@ -61,13 +67,12 @@ export default function LandingPage() {
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-6 leading-tight">
             <span className="gradient-text">Esnaf.AI</span>
             <br />
-            <span className="text-3xl sm:text-4xl font-semibold text-[#aebac1]">Otonom Esnaf Asistanı</span>
+            <span className="text-3xl sm:text-4xl font-semibold text-[#aebac1]">Dijital İş Ortağın</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-[#8696a0] max-w-2xl mx-auto mb-10 leading-relaxed">
-            Türkiye&apos;nin geleneksel esnafını dijital ekonomiye entegre eden,
-            <span className="text-emerald-400 font-medium"> LangGraph tabanlı 5 uzman agent</span> ile
-            çalışan otonom yapay zeka asistanı.
+            Defterini fotoğrafla, mali durumunu sor, ürünlerini internete koy.
+            <span className="text-emerald-400 font-medium"> Yapay zeka senin için çalışsın.</span>
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -96,16 +101,39 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="px-4 py-20 max-w-6xl mx-auto">
+      {/* How It Works */}
+      <section className="px-4 py-20 max-w-5xl mx-auto">
         <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4" style={{ animation: "slideUp 0.6s ease" }}>
-          <span className="gradient-text">5 Uzman Agent</span>, Tek Orkestratör
+          <span className="gradient-text">Nasıl Çalışır?</span>
         </h2>
         <p className="text-center text-[#8696a0] mb-14 max-w-xl mx-auto">
-          LangGraph Supervisor her mesajı analiz eder, doğru uzman agent&apos;a yönlendirir.
+          3 adımda işinin kontrolünü ele al
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {HOW_IT_WORKS.map((item, i) => (
+            <div key={i} className="relative glass rounded-2xl p-8 text-center hover:scale-[1.03] transition-all duration-300" style={{ animation: `slideUp 0.5s ease ${i * 0.15}s both` }}>
+              <div className="text-5xl mb-4">{item.icon}</div>
+              <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-600 text-white text-sm font-bold mb-3">{item.step}</div>
+              <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
+              <p className="text-[#8696a0] text-sm leading-relaxed">{item.desc}</p>
+              {i < HOW_IT_WORKS.length - 1 && (
+                <div className="hidden md:block absolute top-1/2 -right-4 text-emerald-500 text-2xl z-10">→</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="px-4 py-20 max-w-6xl mx-auto">
+        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
+          <span className="gradient-text">Neler Yapabilir?</span>
+        </h2>
+        <p className="text-center text-[#8696a0] mb-14 max-w-xl mx-auto">
+          Her biri kendi alanında uzman 5 yapay zeka asistanı, senin için çalışıyor.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
@@ -115,7 +143,7 @@ export default function LandingPage() {
               <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} mb-4 text-2xl shadow-lg`}>
                 {f.icon}
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">{f.title}</h3>
+              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">{f.title}</h3>
               <p className="text-[#8696a0] text-sm leading-relaxed">{f.desc}</p>
             </div>
           ))}
@@ -137,52 +165,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Tech Stack */}
-      <section className="px-4 py-20 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-10">
-          <span className="gradient-text">Tech Stack</span>
+      {/* Testimonials */}
+      <section className="px-4 py-20 max-w-5xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-12">
+          <span className="gradient-text">Esnaflarımız Ne Diyor?</span>
         </h2>
-        <div className="flex flex-wrap justify-center gap-4">
-          {TECH.map((t, i) => (
-            <div key={t.name} className="glass rounded-xl px-5 py-3 flex flex-col items-center hover:scale-105 transition-transform" style={{ animation: `fadeIn 0.4s ease ${i * 0.1}s both` }}>
-              <span className="font-bold text-emerald-400 text-sm">{t.name}</span>
-              <span className="text-[10px] text-[#8696a0]">{t.desc}</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t, i) => (
+            <div key={i} className="glass rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300" style={{ animation: `slideUp 0.5s ease ${i * 0.1}s both` }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-2xl shadow-lg">
+                  {t.avatar}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white">{t.name}</div>
+                  <div className="text-[10px] text-[#8696a0]">📍 {t.location}</div>
+                </div>
+              </div>
+              <p className="text-sm text-[#aebac1] leading-relaxed italic">&ldquo;{t.text}&rdquo;</p>
+              <div className="mt-3 flex gap-0.5">
+                {[1,2,3,4,5].map(s => <span key={s} className="text-amber-400 text-xs">★</span>)}
+              </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Architecture */}
-      <section className="px-4 py-20 max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl font-bold mb-8"><span className="gradient-text">Mimari</span></h2>
-        <div className="glass rounded-2xl p-8 text-left font-mono text-sm text-[#8696a0] leading-relaxed overflow-x-auto">
-          <pre>{`
-┌─────────────────────────────────────────────────────┐
-│                    KULLANICI                        │
-│     WhatsApp Clone UI + Sesli Komut + Fotoğraf      │
-└───────────────────────┬─────────────────────────────┘
-                        │ SSE Stream
-                        ▼
-┌─────────────────────────────────────────────────────┐
-│              🧠 SUPERVISOR AGENT                    │
-│         (LangGraph Orkestratör — Akıllı Yönlendirme)│
-└──┬──────────┬──────────┬──────────┬─────────────────┘
-   │          │          │          │
-   ▼          ▼          ▼          ▼
-┌──────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│📸    │ │📊      │ │🛒      │ │📦      │
-│Vision│ │Finansal│ │E-Ticaret│ │Envanter│
-│Agent │ │Analist │ │ Uzmanı │ │Takibi  │
-└──┬───┘ └────┬───┘ └────┬───┘ └────┬───┘
-   │          │          │          │
-   └──────────┴──────────┴──────────┘
-                    │
-            ┌───────▼───────┐
-            │  HYBRID RAG   │
-            │ Komisyon │ KDV │
-            │ Kargo │ SGK   │
-            └───────────────┘`}
-          </pre>
         </div>
       </section>
 
@@ -202,7 +207,8 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="py-8 text-center text-xs text-[#8696a0] border-t border-white/5">
-        BTK & Google Hackathon 2026 — Esnaf.AI
+        <p>© 2026 Esnaf.AI — Türk Esnafının Dijital İş Ortağı</p>
+        <p className="mt-1 text-[10px]">BTK & Google Hackathon 2026</p>
       </footer>
     </main>
   );

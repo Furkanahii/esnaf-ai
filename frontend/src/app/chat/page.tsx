@@ -69,8 +69,7 @@ export default function ChatPage() {
 
   const handleQuickAction = (msg: string) => {
     setShowQuickActions(false);
-    setInput(msg);
-    setTimeout(() => { setInput(""); handleSendDirect(msg); }, 50);
+    handleSendDirect(msg);
   };
 
   const handleSendDirect = async (directText?: string) => {
@@ -79,22 +78,27 @@ export default function ChatPage() {
     if (isLoading) return;
     setShowQuickActions(false);
 
+    // Capture current image state in local variables before clearing
+    const currentImage = selectedImage;
+    const currentPreview = imagePreviewUrl;
+
     const userMsg: Message = {
       id: Date.now(), role: "user", content: text || "📷 Fotoğraf gönderildi",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      imagePreview: imagePreviewUrl || undefined,
+      imagePreview: currentPreview || undefined,
     };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
+    // Clear image state immediately after capturing
+    setSelectedImage(null);
+    setImagePreviewUrl(null);
     setIsLoading(true);
 
     try {
-      if (selectedImage) {
+      if (currentImage) {
         const formData = new FormData();
         formData.append("message", text || "Bu defterin fotoğrafını analiz et");
-        formData.append("image", selectedImage);
-        setSelectedImage(null);
-        setImagePreviewUrl(null);
+        formData.append("image", currentImage);
 
         const res = await fetch("/stream", { method: "POST", body: formData });
         const reader = res.body?.getReader();
@@ -118,21 +122,23 @@ export default function ChatPage() {
           }
         }
       } else {
-        const es = new EventSource(`/stream?message=${encodeURIComponent(text)}`);
-        es.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.content) addAgentMessage(data);
-          } catch { /* skip */ }
-        };
-        es.addEventListener("end", () => es.close());
-        es.onerror = () => {
-          es.close();
-          setMessages(prev => [...prev, { id: Date.now(), role: "system", content: "⚠️ Bağlantı hatası: Backend yanıt vermiyor. `uvicorn main:app --port 8000` çalıştığından emin ol.", time: now() }]);
-        };
-        await new Promise<void>(resolve => {
-          es.addEventListener("end", () => resolve());
-          es.onerror = () => { es.close(); resolve(); };
+        await new Promise<void>((resolve) => {
+          const es = new EventSource(`/stream?message=${encodeURIComponent(text)}`);
+          es.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.content) addAgentMessage(data);
+            } catch { /* skip */ }
+          };
+          es.addEventListener("end", () => {
+            es.close();
+            resolve();
+          });
+          es.onerror = () => {
+            es.close();
+            setMessages(prev => [...prev, { id: Date.now(), role: "system", content: "⚠️ Bağlantı hatası: Backend yanıt vermiyor. `uvicorn main:app --port 8000` çalıştığından emin ol.", time: now() }]);
+            resolve();
+          };
         });
       }
     } catch {

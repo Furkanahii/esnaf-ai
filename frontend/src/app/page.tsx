@@ -61,7 +61,7 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto" style={{ animation: "slideUp 0.8s ease" }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-sm text-emerald-400 font-medium mb-6">
             <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            BTK & Google Hackathon 2026
+            Yapay Zeka Destekli İş Ortağın
           </div>
 
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-6 leading-tight">
@@ -208,7 +208,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-8 text-center text-xs text-[#8696a0] border-t border-white/5">
         <p>© 2026 Esnaf.AI — Türk Esnafının Dijital İş Ortağı</p>
-        <p className="mt-1 text-[10px]">BTK & Google Hackathon 2026</p>
+
       </footer>
     </main>
   );

@@ -56,9 +56,9 @@ def call_gemini(prompt: str, image_b64: str = None) -> str:
             resp = gemini_model.generate_content([
                 prompt,
                 {"mime_type": "image/jpeg", "data": image_data}
-            ])
+            ], request_options={"timeout": 10.0})
         else:
-            resp = gemini_model.generate_content(prompt)
+            resp = gemini_model.generate_content(prompt, request_options={"timeout": 10.0})
         return resp.text
     except Exception as e:
         print(f"Gemini API error: {e}")

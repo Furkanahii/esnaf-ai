@@ -28,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Simple in-memory state (per-session for hackathon)
+# Simple in-memory state
 conversation_history: list = []
 last_financial_data: dict = {
     "total_debt": 25550, "total_receivable": 21800, "cash": 2200,
@@ -141,32 +141,45 @@ async def generate_graph_stream(message: str, image_b64: Optional[str] = None):
         "proactive_alerts": None,
     }
     
-    for output in app_graph.stream(initial_state):
-        for node_name, node_state in output.items():
-            msgs = node_state.get("messages", [])
-            last_msg = msgs[-1].content if msgs else ""
-            active = node_state.get("active_agent", node_name)
-            
-            if not last_msg:
-                continue
-            
-            # Update financial data if vision agent extracted it
-            if node_state.get("extracted_financial_data"):
-                last_financial_data = node_state["extracted_financial_data"]
-            
-            conversation_history.append(msgs[-1])
-            
-            payload = {
-                "node": node_name,
-                "agent": active,
-                "content": last_msg,
-                "is_actionable": node_state.get("ecommerce_draft_ready", False),
-                "is_critical": node_state.get("kritik_nakit_acigi", False),
-                "alerts": node_state.get("proactive_alerts", []),
-                "thought_process": node_state.get("thought_process", []),
-            }
-            yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-            await asyncio.sleep(1.5)
+    try:
+        for output in app_graph.stream(initial_state):
+            for node_name, node_state in output.items():
+                msgs = node_state.get("messages", [])
+                last_msg = msgs[-1].content if msgs else ""
+                active = node_state.get("active_agent", node_name)
+                
+                if not last_msg:
+                    continue
+                
+                # Update financial data if vision agent extracted it
+                if node_state.get("extracted_financial_data"):
+                    last_financial_data = node_state["extracted_financial_data"]
+                
+                conversation_history.append(msgs[-1])
+                
+                payload = {
+                    "node": node_name,
+                    "agent": active,
+                    "content": last_msg,
+                    "is_actionable": node_state.get("ecommerce_draft_ready", False),
+                    "is_critical": node_state.get("kritik_nakit_acigi", False),
+                    "alerts": node_state.get("proactive_alerts", []),
+                    "thought_process": node_state.get("thought_process", []),
+                }
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                await asyncio.sleep(0.4)
+    except Exception as e:
+        print(f"Stream error: {e}")
+        error_payload = {
+            "node": "system",
+            "agent": "supervisor",
+            "content": "⚠️ Bir hata oluştu abi, tekrar dener misin? Sorun devam ederse sayfayı yenile.",
+            "is_actionable": False,
+            "is_critical": False,
+            "alerts": [],
+            "thought_process": [],
+        }
+        yield f"data: {json.dumps(error_payload, ensure_ascii=False)}\n\n"
     
     yield "event: end\ndata: {}\n\n"
 

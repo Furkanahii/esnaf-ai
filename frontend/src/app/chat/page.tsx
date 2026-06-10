@@ -27,7 +27,7 @@ const AGENT_BADGES: Record<string, { icon: string; label: string; color: string 
 };
 
 const QUICK_ACTIONS = [
-  { icon: "📷", label: "Defter Fotoğrafı", msg: "Defterin fotoğrafına bak" },
+  { icon: "📷", label: "Defter Fotoğrafı", msg: "Defterin fotoğrafına bak", isPhotoUpload: true },
   { icon: "📊", label: "Mali Durumum", msg: "Durumum nedir, borçlarıma bak" },
   { icon: "🛒", label: "Ürün Sat", msg: "Trendyol'da şampuan satmak istiyorum" },
   { icon: "📦", label: "Stok Kontrol", msg: "Stoktaki ürünleri listele" },
@@ -56,6 +56,9 @@ export default function ChatPage() {
   const [showStats, setShowStats] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSendPhotoRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [backendOnline, setBackendOnline] = useState(true);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -67,9 +70,96 @@ export default function ChatPage() {
       .catch(() => {});
   }, []);
 
-  const handleQuickAction = (msg: string) => {
+  // Sunucu online kontrolü (Health Check)
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      setBackendOnline(false);
+      controller.abort();
+    }, 5000);
+
+    fetch("/api/health", { signal: controller.signal })
+      .then(r => {
+        clearTimeout(timeout);
+        if (!r.ok) throw new Error();
+        setBackendOnline(true);
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        setBackendOnline(false);
+      });
+  }, []);
+
+  const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
+    if (isLoading) return;
+    if (action.isPhotoUpload) {
+      autoSendPhotoRef.current = true;
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: "supervisor",
+        content: "📷 Defterinin, fişinin veya faturanın fotoğrafını seç abi. Ben hemen okuyup borç-alacak tablosunu çıkarayım!",
+        agent: "supervisor",
+        time: now(),
+      }]);
+      fileInputRef.current?.click();
+      return;
+    }
+
     setShowQuickActions(false);
-    handleSendDirect(msg);
+    void handleSendDirect(action.msg);
+  };
+
+  const handleCancel = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: "system",
+        content: "🛑 İşlem kullanıcı tarafından iptal edildi.",
+        time: now(),
+      }]);
+    }
+  };
+
+  const parseStreamChunk = (line: string) => {
+    if (!line.startsWith("data: ") || line.length <= 6) return null;
+    try {
+      const data = JSON.parse(line.slice(6));
+      return data.content ? data : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const consumeStream = async (res: Response) => {
+    if (!res.ok) {
+      throw new Error(`Sunucu hatası (${res.status})`);
+    }
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("Sunucu yanıt vermedi");
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let received = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        const data = parseStreamChunk(line);
+        if (data) {
+          received = true;
+          addAgentMessage(data);
+        }
+      }
+    }
+
+    if (!received) {
+      throw new Error("Sunucudan yanıt alınamadı");
+    }
   };
 
   const handleSendDirect = async (directText?: string) => {
@@ -78,72 +168,46 @@ export default function ChatPage() {
     if (isLoading) return;
     setShowQuickActions(false);
 
-    // Capture current image state in local variables before clearing
-    const currentImage = selectedImage;
-    const currentPreview = imagePreviewUrl;
-
     const userMsg: Message = {
       id: Date.now(), role: "user", content: text || "📷 Fotoğraf gönderildi",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      imagePreview: currentPreview || undefined,
+      time: now(),
+      imagePreview: imagePreviewUrl || undefined,
     };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
-    // Clear image state immediately after capturing
     setSelectedImage(null);
     setImagePreviewUrl(null);
     setIsLoading(true);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     try {
-      if (currentImage) {
+      if (selectedImage) {
         const formData = new FormData();
         formData.append("message", text || "Bu defterin fotoğrafını analiz et");
-        formData.append("image", currentImage);
-
-        const res = await fetch("/stream", { method: "POST", body: formData });
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-        if (reader) {
-          let buffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-            for (const line of lines) {
-              if (line.startsWith("data: ") && line.length > 6) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  if (data.content) addAgentMessage(data);
-                } catch { /* skip */ }
-              }
-            }
-          }
-        }
+        formData.append("image", selectedImage);
+        const res = await fetch("/stream", { method: "POST", body: formData, signal: controller.signal });
+        await consumeStream(res);
       } else {
-        await new Promise<void>((resolve) => {
-          const es = new EventSource(`/stream?message=${encodeURIComponent(text)}`);
-          es.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              if (data.content) addAgentMessage(data);
-            } catch { /* skip */ }
-          };
-          es.addEventListener("end", () => {
-            es.close();
-            resolve();
-          });
-          es.onerror = () => {
-            es.close();
-            setMessages(prev => [...prev, { id: Date.now(), role: "system", content: "⚠️ Bağlantı hatası: Backend yanıt vermiyor. `uvicorn main:app --port 8000` çalıştığından emin ol.", time: now() }]);
-            resolve();
-          };
-        });
+        const res = await fetch(`/stream?message=${encodeURIComponent(text)}`, { signal: controller.signal });
+        await consumeStream(res);
       }
-    } catch {
-      setMessages(prev => [...prev, { id: Date.now(), role: "system", content: "⚠️ Sunucuya bağlanılamadı.", time: now() }]);
+    } catch (err) {
+      const isTimeout = err instanceof DOMException && err.name === "AbortError";
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: "system",
+        content: isTimeout
+          ? "⏱️ Sunucu 30 saniye içinde yanıt vermedi. Backend açık mı kontrol et veya tekrar dene."
+          : "⚠️ Sunucuya bağlanılamadı. Backend çalışıyor mu kontrol et (uvicorn main:app --port 8000).",
+        time: now(),
+      }]);
+      setBackendOnline(false);
     } finally {
+      clearTimeout(timeoutId);
+      abortControllerRef.current = null;
       setIsLoading(false);
     }
   };
@@ -208,16 +272,69 @@ export default function ChatPage() {
   const handleActionReject = () => executeAction("reject");
 
 
+  const sendWithImage = async (file: File, text: string, previewUrl: string) => {
+    if (isLoading) return;
+    setShowQuickActions(false);
+
+    const userMsg: Message = {
+      id: Date.now(), role: "user", content: text || "📷 Fotoğraf gönderildi",
+      time: now(),
+      imagePreview: previewUrl,
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const formData = new FormData();
+      formData.append("message", text || "Bu defterin fotoğrafını analiz et");
+      formData.append("image", file);
+      const res = await fetch("/stream", { method: "POST", body: formData, signal: controller.signal });
+      await consumeStream(res);
+    } catch (err) {
+      const isTimeout = err instanceof DOMException && err.name === "AbortError";
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: "system",
+        content: isTimeout
+          ? "⏱️ Sunucu 30 saniye içinde yanıt vermedi. Tekrar dene veya backend'i kontrol et."
+          : "⚠️ Sunucuya bağlanılamadı. Backend çalışıyor mu kontrol et.",
+        time: now(),
+      }]);
+      setBackendOnline(false);
+    } finally {
+      clearTimeout(timeoutId);
+      abortControllerRef.current = null;
+      setIsLoading(false);
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      autoSendPhotoRef.current = false;
+      return;
+    }
     loadImageFile(file);
   };
 
   const loadImageFile = (file: File) => {
-    setSelectedImage(file);
     const reader = new FileReader();
-    reader.onload = (ev) => setImagePreviewUrl(ev.target?.result as string);
+    reader.onload = (ev) => {
+      const previewUrl = ev.target?.result as string;
+      setSelectedImage(file);
+      setImagePreviewUrl(previewUrl);
+
+      if (autoSendPhotoRef.current) {
+        autoSendPhotoRef.current = false;
+        setSelectedImage(null);
+        setImagePreviewUrl(null);
+        void sendWithImage(file, "Bu defterin fotoğrafını analiz et", previewUrl);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
@@ -256,8 +373,8 @@ export default function ChatPage() {
           </div>
           <div>
             <h1 className="text-base font-bold text-white leading-tight tracking-tight">Esnaf<span className="gradient-text">.AI</span></h1>
-            <p className={`text-xs font-medium ${isLoading ? "text-yellow-400" : "text-emerald-400"}`}>
-              {isLoading ? "⏳ düşünüyor..." : "● çevrimiçi"}
+            <p className={`text-xs font-medium ${isLoading ? "text-yellow-400" : backendOnline ? "text-emerald-400" : "text-red-400"}`}>
+              {isLoading ? "⏳ düşünüyor..." : backendOnline ? "● çevrimiçi" : "● bağlantı yok"}
             </p>
           </div>
         </div>
@@ -407,10 +524,13 @@ export default function ChatPage() {
           {isLoading && (
             <div className="flex justify-start" style={{ animation: "fadeIn 0.3s ease" }}>
               <div className="bg-[#202c33] rounded-xl rounded-tl-none px-5 py-3 shadow-lg">
-                <div className="flex gap-1.5">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full" style={{ animation: "typing-dot 1.4s infinite 0ms" }} />
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full" style={{ animation: "typing-dot 1.4s infinite 200ms" }} />
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full" style={{ animation: "typing-dot 1.4s infinite 400ms" }} />
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full" style={{ animation: "typing-dot 1.4s infinite 0ms" }} />
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full" style={{ animation: "typing-dot 1.4s infinite 200ms" }} />
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full" style={{ animation: "typing-dot 1.4s infinite 400ms" }} />
+                  </div>
+                  <button onClick={handleCancel} className="text-[10px] text-red-400 hover:text-red-300 px-2 py-0.5 rounded-md border border-red-800/40 hover:bg-red-900/20 transition-colors">İptal</button>
                 </div>
               </div>
             </div>
@@ -418,12 +538,19 @@ export default function ChatPage() {
 
           {/* Quick Action Chips */}
           {showQuickActions && messages.length <= 2 && !isLoading && (
-            <div className="flex flex-wrap gap-2 mt-3 justify-center" style={{ animation: "slideUp 0.5s ease 0.3s both" }}>
-              {QUICK_ACTIONS.map(a => (
-                <button key={a.label} onClick={() => handleQuickAction(a.msg)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-[#e9edef] hover:bg-white/10 hover:scale-105 transition-all duration-200 active:scale-95">
-                  <span>{a.icon}</span> {a.label}
-                </button>
-              ))}
+            <div className="flex flex-col items-center gap-3 mt-3" style={{ animation: "slideUp 0.5s ease 0.3s both" }}>
+              {!backendOnline && (
+                <div className="text-xs text-amber-400 bg-amber-900/20 border border-amber-800/30 rounded-lg px-4 py-2 text-center max-w-md">
+                  ⚠️ Sunucuya bağlanılamıyor. Komutlar çalışmayabilir. Backend&apos;in açık olduğundan emin ol.
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 justify-center">
+                {QUICK_ACTIONS.map(a => (
+                  <button key={a.label} onClick={() => handleQuickAction(a)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-[#e9edef] hover:bg-white/10 hover:scale-105 transition-all duration-200 active:scale-95">
+                    <span>{a.icon}</span> {a.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <div ref={messagesEndRef} />

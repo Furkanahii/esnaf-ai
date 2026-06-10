@@ -463,7 +463,6 @@ def financial_analyst_node(state: AgentState):
             
         # İskonto hesabı (Senet/Çek)
         if item.get("type") == "alacak" and item.get("instrument_type") in ["senet", "cek"]:
-            # Basit simülasyon: Hackathon demo için sabit 45 gün diyelim
             loss = calculate_discount_loss(item["amount"], 45, 0.60)
             risk_report["discount_losses"].append({
                 "name": item["name"],

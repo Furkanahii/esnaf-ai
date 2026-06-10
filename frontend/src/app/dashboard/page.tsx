@@ -195,7 +195,7 @@ export default function DashboardPage() {
             <p className="text-sm text-[#8696a0] mt-1">Anlık mali durum ve stok takibi</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-sm hover:bg-white/10 hover:scale-105 transition-all shadow-lg hidden sm:block">
+            <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-sm hover:bg-white/10 hover:scale-105 transition-all shadow-lg">
               📥 Rapor İndir
             </button>
             <Link href="/chat" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold text-sm hover:scale-105 transition-all shadow-lg shadow-emerald-900/30">

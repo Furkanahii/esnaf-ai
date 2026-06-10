@@ -1,7 +1,5 @@
 # 🏪 Esnaf.AI — Dijital İş Ortağın
 
-> **BTK & Google Hackathon 2026** projesi
-
 Türkiye'deki geleneksel esnafı dijital ekonomiye entegre eden, yapay zeka destekli otonom iş asistanı.
 
 ## 🎯 Problem
@@ -87,6 +85,4 @@ Tarayıcıda → `http://localhost:3000`
 - **🔗 Backend API:** [https://esnaf-ai-backend-production.up.railway.app](https://esnaf-ai-backend-production.up.railway.app)
 - **📹 Demo Videosu:** [YouTube linki]
 
-## 👥 Takım
 
-BTK & Google Hackathon 2026 — Esnaf.AI

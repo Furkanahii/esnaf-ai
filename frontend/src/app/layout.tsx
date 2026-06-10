@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Esnaf.AI | Türkiye'nin İlk Otonom Esnaf Asistanı",
-  description: "LangGraph + Gemini ile çalışan, defter okuyan, mali analiz yapan, e-ticaret ilan hazırlayan otonom yapay zeka asistanı. BTK Hackathon 2026.",
-  keywords: "esnaf, yapay zeka, AI, hackathon, LangGraph, Gemini, e-ticaret, mali analiz",
+  description: "LangGraph + Gemini ile çalışan, defter okuyan, mali analiz yapan, e-ticaret ilan hazırlayan otonom yapay zeka asistanı.",
+  keywords: "esnaf, yapay zeka, AI, LangGraph, Gemini, e-ticaret, mali analiz",
   openGraph: {
     title: "Esnaf.AI — Otonom Esnaf Asistanı",
     description: "Geleneksel esnafı dijital ekonomiye entegre eden AI asistanı",

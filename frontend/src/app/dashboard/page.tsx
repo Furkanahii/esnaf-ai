@@ -106,20 +106,7 @@ function BarChart({ data }: { data: { label: string; value: number; color: strin
   );
 }
 
-const getApiUrl = () => {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return "http://127.0.0.1:8000";
-    }
-  }
-  return "https://esnaf-ai-backend-production.up.railway.app";
-};
 
-const API_BASE = getApiUrl();
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -130,10 +117,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_BASE}/api/dashboard`).then(r => r.json()).catch(() => null),
-      fetch(`${API_BASE}/api/alerts`).then(r => r.json()).catch(() => ({ alerts: [] })),
-      fetch(`${API_BASE}/api/platforms`).then(r => r.json()).catch(() => null),
-      fetch(`${API_BASE}/api/radar`).then(r => r.json()).catch(() => null),
+      fetch("/api/dashboard").then(r => r.json()).catch(() => null),
+      fetch("/api/alerts").then(r => r.json()).catch(() => ({ alerts: [] })),
+      fetch("/api/platforms").then(r => r.json()).catch(() => null),
+      fetch("/api/radar").then(r => r.json()).catch(() => null),
     ]).then(([dash, al, plat, rad]) => {
       if (dash && dash.financial) setData(dash);
       setAlerts(al?.alerts || []);

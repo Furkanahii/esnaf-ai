@@ -35,6 +35,21 @@ const QUICK_ACTIONS = [
   { icon: "💰", label: "Vergi Hesapla", msg: "Vergi durumumu hesapla" },
 ];
 
+const getApiUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://127.0.0.1:8000";
+    }
+  }
+  return "https://esnaf-ai-backend-production.up.railway.app";
+};
+
+const API_BASE = getApiUrl();
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -64,7 +79,7 @@ export default function ChatPage() {
 
   // Fetch alerts on load
   useEffect(() => {
-    fetch("/api/alerts")
+    fetch(`${API_BASE}/api/alerts`)
       .then(r => r.json())
       .then(d => { if (d.alerts?.length) { setAlerts(d.alerts); setShowAlerts(true); } })
       .catch(() => {});
@@ -78,7 +93,7 @@ export default function ChatPage() {
       controller.abort();
     }, 5000);
 
-    fetch("/api/health", { signal: controller.signal })
+    fetch(`${API_BASE}/health`, { signal: controller.signal })
       .then(r => {
         clearTimeout(timeout);
         if (!r.ok) throw new Error();
@@ -157,6 +172,15 @@ export default function ChatPage() {
       }
     }
 
+    // Process any remaining data left in buffer after stream ends
+    if (buffer.trim()) {
+      const data = parseStreamChunk(buffer.trim());
+      if (data) {
+        received = true;
+        addAgentMessage(data);
+      }
+    }
+
     if (!received) {
       throw new Error("Sunucudan yanıt alınamadı");
     }
@@ -181,17 +205,17 @@ export default function ChatPage() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
       if (selectedImage) {
         const formData = new FormData();
         formData.append("message", text || "Bu defterin fotoğrafını analiz et");
         formData.append("image", selectedImage);
-        const res = await fetch("/stream", { method: "POST", body: formData, signal: controller.signal });
+        const res = await fetch(`${API_BASE}/stream`, { method: "POST", body: formData, signal: controller.signal });
         await consumeStream(res);
       } else {
-        const res = await fetch(`/stream?message=${encodeURIComponent(text)}`, { signal: controller.signal });
+        const res = await fetch(`${API_BASE}/stream?message=${encodeURIComponent(text)}`, { signal: controller.signal });
         await consumeStream(res);
       }
     } catch (err) {
@@ -200,7 +224,7 @@ export default function ChatPage() {
         id: Date.now(),
         role: "system",
         content: isTimeout
-          ? "⏱️ Sunucu 30 saniye içinde yanıt vermedi. Backend açık mı kontrol et veya tekrar dene."
+          ? "⏱️ Sunucu 2 dakika içinde yanıt vermedi. Backend açık mı kontrol et veya tekrar dene."
           : "⚠️ Sunucuya bağlanılamadı. Backend çalışıyor mu kontrol et (uvicorn main:app --port 8000).",
         time: now(),
       }]);
@@ -236,7 +260,7 @@ export default function ChatPage() {
     // Disable previous action buttons
     setMessages(prev => prev.map(m => ({ ...m, isActionable: false })));
     try {
-      const res = await fetch("/api/action", {
+      const res = await fetch(`${API_BASE}/api/action`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, agent: "ecommerce_agent" }),
@@ -286,13 +310,13 @@ export default function ChatPage() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
       const formData = new FormData();
       formData.append("message", text || "Bu defterin fotoğrafını analiz et");
       formData.append("image", file);
-      const res = await fetch("/stream", { method: "POST", body: formData, signal: controller.signal });
+      const res = await fetch(`${API_BASE}/stream`, { method: "POST", body: formData, signal: controller.signal });
       await consumeStream(res);
     } catch (err) {
       const isTimeout = err instanceof DOMException && err.name === "AbortError";
@@ -300,7 +324,7 @@ export default function ChatPage() {
         id: Date.now(),
         role: "system",
         content: isTimeout
-          ? "⏱️ Sunucu 30 saniye içinde yanıt vermedi. Tekrar dene veya backend'i kontrol et."
+          ? "⏱️ Sunucu 2 dakika içinde yanıt vermedi. Tekrar dene veya backend'i kontrol et."
           : "⚠️ Sunucuya bağlanılamadı. Backend çalışıyor mu kontrol et.",
         time: now(),
       }]);
@@ -391,7 +415,7 @@ export default function ChatPage() {
           )}
           <button onClick={() => setShowStats(!showStats)} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-[#aebac1] hover:bg-white/10 transition-colors font-medium" title="Konuşma İstatistikleri">📈 {messages.length - 1}</button>
           <a href="/dashboard" className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-colors font-medium">📊 Dashboard</a>
-          <button onClick={() => fetch("/reset", { method: "POST" }).then(() => { setMessages([messages[0]]); setShowQuickActions(true); })} className="text-xs px-3 py-1.5 rounded-lg border border-[#8696a0]/30 text-[#8696a0] hover:bg-white/5 transition-colors">Sıfırla</button>
+          <button onClick={() => fetch(`${API_BASE}/reset`, { method: "POST" }).then(() => { setMessages([messages[0]]); setShowQuickActions(true); })} className="text-xs px-3 py-1.5 rounded-lg border border-[#8696a0]/30 text-[#8696a0] hover:bg-white/5 transition-colors">Sıfırla</button>
         </div>
       </header>
 

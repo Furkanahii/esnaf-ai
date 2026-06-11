@@ -1,6 +1,6 @@
 """
 Esnaf.AI — LangGraph Supervisor Agent v4.0
-Hackathon-ready: 5-agent system with inventory, proactive alerts, expanded RAG.
+Esnaf-ready: 5-agent system with inventory, proactive alerts, expanded RAG.
 """
 import os
 import json
